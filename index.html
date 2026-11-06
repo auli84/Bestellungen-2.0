@@ -1,0 +1,1179 @@
+<!doctype html>
+<html lang="de-AT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Puxi Jahr">
+<meta name="theme-color" content="#FB7F24">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Oswald:wght@500;600;700&display=swap">
+<title>Puxi’s Bestellungen</title>
+<style>
+:root{
+  --bg:#FB7F24;--surface:#FFFFFF;--ink:#140A03;--muted:#3A1E0A;--line:rgba(0,0,0,.18);
+  --accent:#3661B4;--accent-ink:#FFFFFF;--brown:#321907;--on-brown:#FFF4EA;--muted-brown:#D6BBA2;
+  --del:#3661B4;--del-soft:#E3EAF7;--pay:#00A866;--pay-soft:#D6F5E8;--open:#3661B4;--danger:#B3261E;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+body{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
+body.locked{overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+button:disabled{opacity:.35;cursor:default}
+input,select,textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;min-height:44px}
+textarea{resize:vertical}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.top{position:sticky;top:0;z-index:5;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px 10px;background:var(--bg);border-bottom:1px solid var(--line)}
+.top h1{margin:0;font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.add{border:0;background:var(--accent);color:var(--accent-ink);font-weight:700;border-radius:999px;padding:8px 18px;font-size:16px}
+main{padding:12px 16px 28px;max-width:720px;margin:0 auto}
+
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:5;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabs button{border:0;background:none;color:var(--muted);font-size:14px;font-weight:600;padding:14px 4px}
+.tabs button[aria-current=page]{color:var(--accent)}
+
+.filters{display:grid;gap:10px}
+.row{display:flex;gap:8px;align-items:center}
+.row select{width:auto;flex:0 0 auto}
+.row input{flex:1;min-width:0}
+.arrow{flex:0 0 44px;height:44px;border:1px solid var(--line);background:var(--surface);border-radius:10px;font-size:20px}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:0 16px}
+.chips::-webkit-scrollbar{display:none}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 14px;font-size:15px;white-space:nowrap}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.count{color:var(--muted);font-size:14px;margin:14px 0 0}
+
+.day{display:flex;align-items:center;gap:10px;margin:24px 0 8px;font-weight:400}
+.dnum{font-size:44px;font-weight:800;line-height:.9;letter-spacing:-.03em;color:var(--accent);font-variant-numeric:tabular-nums;min-width:1.25em}
+.dtxt{display:flex;flex-direction:column;font-size:14px;color:var(--muted);line-height:1.25}
+.dtxt b{color:var(--ink);font-size:17px}
+.dsum{margin-left:auto;font-weight:700;font-size:17px;font-variant-numeric:tabular-nums}
+.mhead{margin:0 0 8px;font-size:22px;letter-spacing:-.01em}
+
+.order{background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--open);border-radius:14px;margin-bottom:8px;overflow:hidden}
+.order.is-del{border-left-color:var(--del)}
+.order.is-paid,.order.is-done{border-left-color:var(--pay)}
+.o-main{padding:12px 14px 10px;cursor:pointer}
+.o-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.o-name{font-weight:700;font-size:17px}
+.o-sum{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.o-items{font-size:15px;margin-top:2px}
+.o-meta{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:14px;color:var(--muted);margin-top:4px}
+.o-meta a{color:var(--accent);text-decoration:none;font-weight:600}
+.o-note{font-size:14px;color:var(--muted);margin-top:6px;white-space:pre-wrap;border-left:2px solid var(--line);padding-left:8px}
+.o-actions{display:grid;grid-template-columns:1fr;border-top:1px solid var(--line)}
+.tog{border:0;background:none;padding:12px;font-weight:600;font-size:15px;color:var(--muted);min-height:44px}
+.o-actions .tog+.tog{border-left:1px solid var(--line)}
+.tog::before{content:"○ "}
+.tog.on::before{content:"✓ "}
+.tog.del.on{color:var(--del);background:var(--del-soft)}
+.tog.pay.on{color:var(--pay);background:var(--pay-soft)}
+.warn{color:var(--open);font-size:14px;font-weight:600}
+
+.empty{text-align:center;padding:48px 12px;color:var(--muted)}
+.empty .btn{width:auto;padding-left:24px;padding-right:24px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:14px 0}
+.card h3{margin:0 0 4px;font-size:18px}
+.card p{margin:0 0 6px;color:var(--muted);font-size:15px}
+.sblock .day{margin-top:0}
+.sblock h4{margin:16px 0 4px;font-size:15px;color:var(--muted);font-weight:600}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:5px 0;font-variant-numeric:tabular-nums}
+.kv b{font-weight:600}
+.kv.total{font-weight:800;border-top:1px solid var(--line);margin-top:4px;padding-top:8px}
+.hint{color:var(--muted);font-size:14px}
+.btn{display:flex;justify-content:center;align-items:center;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 16px;font-weight:600;font-size:16px;width:100%;margin-top:8px;min-height:48px;text-align:center}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.danger{color:var(--danger);margin-top:20px}
+.empty .btn{display:inline-flex}
+
+.plist{padding:0 16px}
+.prow{display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
+.prow:last-child{border-bottom:0}
+.p-main{flex:1;border:0;background:none;text-align:left;padding:12px 0;display:flex;flex-direction:column;gap:2px;min-width:0}
+.p-top{display:flex;justify-content:space-between;gap:10px}
+.p-top span{font-variant-numeric:tabular-nums;white-space:nowrap}
+.p-main small{color:var(--muted);font-size:13px}
+.p-ord{display:flex;gap:4px}
+.p-ord button{width:36px;height:36px;border:1px solid var(--line);background:var(--surface);border-radius:8px}
+
+.sheet{position:fixed;inset:0;z-index:20;background:var(--bg);display:flex;flex-direction:column}
+.sheet[hidden]{display:none}
+.sh-head{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:calc(env(safe-area-inset-top,0px) + 6px) 6px 6px;border-bottom:1px solid var(--line);background:var(--surface)}
+.sh-head h2{font-size:17px;margin:0;text-align:center}
+.link{border:0;background:none;color:var(--accent);font-size:17px;padding:10px;justify-self:start}
+.link.strong{font-weight:700;justify-self:end}
+.sh-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 32px}
+.sh-body>*{max-width:688px;margin-left:auto;margin-right:auto}
+.sh-foot{display:flex;justify-content:space-between;align-items:baseline;padding:12px 16px calc(env(safe-area-inset-bottom,0px) + 12px);border-top:1px solid var(--line);background:var(--surface);font-weight:800;font-size:20px;font-variant-numeric:tabular-nums}
+.sh-foot[hidden]{display:none}
+.f{display:block;margin-bottom:14px}
+.f>span{display:block;font-size:14px;color:var(--muted);margin-bottom:4px}
+.sec{font-size:15px;color:var(--muted);font-weight:600;margin:20px 0 0}
+.steps{margin-bottom:16px}
+.step{display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px 10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.s-name{font-weight:600}
+.step.has .s-name{color:var(--accent)}
+.s-price{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.s-ctrl{display:flex;align-items:center;gap:6px}
+.s-ctrl button{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface);font-size:22px;line-height:1;padding:0}
+.s-ctrl .plus{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.s-ctrl .s-qty{width:3.4em;min-height:44px;padding:6px 2px;text-align:center;font-weight:800;font-size:18px;font-variant-numeric:tabular-nums;border-radius:10px}
+.s-pp{grid-column:1/-1;display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
+.s-pp input{width:120px}
+.seg{display:grid;grid-template-columns:repeat(2,1fr);border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:none;padding:10px 4px;font-size:15px;min-height:44px}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg);font-weight:600}
+.toggles{display:grid;grid-template-columns:1fr;gap:8px;margin:4px 0 8px}
+.toggles .tog{border:1px solid var(--line);border-radius:12px;background:var(--surface);min-height:52px;font-size:16px}
+
+.pcat{font-size:20px;margin:22px 0 0;letter-spacing:-.01em}
+.pcat+.card{margin-top:8px}
+.steps details{border-bottom:1px solid var(--line)}
+.steps summary{list-style:none;display:flex;align-items:center;gap:10px;padding:14px 0;font-weight:700;font-size:17px;cursor:pointer;min-height:48px}
+.steps summary::-webkit-details-marker{display:none}
+.steps summary::after{content:"+";margin-left:auto;font-size:22px;font-weight:400;color:var(--muted)}
+.steps details[open] summary::after{content:"−"}
+.steps .step:last-child{border-bottom:0}
+.badge{background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:1px 9px;font-size:14px;font-variant-numeric:tabular-nums}
+@media screen{#printArea{display:none}}
+@media print{
+  html,body{background:#fff!important;padding:0!important}
+  body>*:not(#printArea){display:none!important}
+  #printArea{display:block}
+}
+.lock{text-align:center;padding:24px 16px}
+.lock input{max-width:200px;margin:14px auto 4px;display:block;text-align:center;font-size:24px;letter-spacing:.3em}
+.lock .btn{max-width:240px;margin:10px auto 0}
+.f[hidden]{display:none}
+.two{display:grid;grid-template-columns:1.35fr 1fr;gap:10px;margin-bottom:14px}
+.addr{grid-template-columns:2fr 1fr;margin-bottom:10px}
+.addr2{grid-template-columns:1fr 2fr;margin-bottom:0}
+.two span{display:block;font-size:14px;color:var(--muted);font-weight:600;margin-bottom:4px}
+.wcard{padding:6px 0}
+.wscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.wk{border-collapse:collapse;width:100%;font-size:14px}
+.wk th,.wk td{padding:8px 10px;text-align:left;vertical-align:top;border-bottom:1px solid rgba(255,255,255,.12)}
+.wk tr:last-child td{border-bottom:0}
+.wk th{color:var(--bg);font-weight:600;font-size:12px;min-width:64px;line-height:1.2}
+.wk th:nth-child(2){min-width:120px}
+.wk .n{text-align:center;font-variant-numeric:tabular-nums;font-weight:700}
+.wk .t{white-space:nowrap;font-weight:700;color:var(--bg)}
+.wk small{display:block;color:var(--muted-brown);font-size:12px;margin-top:2px}
+#toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translate(-50%,16px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:15px;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;z-index:30;white-space:nowrap}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+
+/* ---------- Homepage-Design ---------- */
+html,body{font-family:Montserrat,-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif}
+.top,.tabs button,.pcat,.mhead,.sh-head h2,.card h3,.dnum,#stepList summary,#sortList summary{font-family:Oswald,"Arial Narrow","Helvetica Neue",sans-serif}
+.top{border-bottom:0;padding-bottom:12px}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand svg{flex:0 0 40px;height:40px}
+.top h1{font-size:28px;font-weight:700;letter-spacing:0}
+.add{background:#000;color:var(--bg);border-radius:2px;font-family:Oswald,sans-serif;font-weight:600;letter-spacing:.02em}
+.tabs{background:var(--brown);border-top:0}
+.tabs button{color:var(--muted-brown);font-size:16px;font-weight:600}
+.tabs button[aria-current=page]{color:var(--bg)}
+input,select,textarea{border-color:rgba(0,0,0,.2)}
+.chip{background:rgba(255,255,255,.88);border-color:transparent;color:var(--ink);font-weight:500}
+.chip[aria-pressed=true]{background:#000;color:var(--bg);border-color:#000}
+.count{color:var(--muted);font-weight:500}
+.dnum{background:var(--accent);color:var(--bg);padding:6px 8px 4px;font-size:38px;font-weight:700;letter-spacing:0;text-align:center}
+.dtxt{color:var(--muted)}
+.dsum{color:var(--ink)}
+.order,.card{background:var(--brown);color:var(--on-brown);border:0;border-radius:3px}
+.order{border-left:6px solid var(--open)}
+.order.is-paid,.order.is-done{border-left-color:#00DB87}
+.order .o-meta,.card p,.card .hint,.p-main small{color:var(--muted-brown)}
+.o-meta a{color:var(--bg)}
+.o-note{color:var(--muted-brown);border-left-color:rgba(255,255,255,.25)}
+.o-actions{border-top-color:rgba(255,255,255,.12)}
+.o-actions .tog{color:var(--muted-brown)}
+.o-actions .tog.pay.on{color:#00DB87;background:rgba(0,219,135,.14)}
+.warn{color:#FFC46B}
+.card .dtxt{color:var(--muted-brown)}
+.card .dtxt b,.card .mhead{color:var(--on-brown)}
+.sblock h4{color:var(--bg)}
+.kv.total{border-top-color:rgba(255,255,255,.25)}
+.card .day{margin-bottom:12px}
+.btn{background:#000;color:var(--bg);border:0;border-radius:2px}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.danger{background:#000;color:#FF8A80}
+.empty{color:var(--ink)}
+.prow{border-bottom-color:rgba(255,255,255,.12)}
+.p-main{color:var(--on-brown)}
+.p-ord button{background:transparent;color:var(--on-brown);border-color:rgba(255,255,255,.3)}
+.pcat{font-size:22px;font-weight:600}
+.sheet{background:var(--bg)}
+.sh-head{background:var(--brown);border-bottom:0}
+.sh-head h2{color:var(--on-brown);font-size:19px;font-weight:600}
+.link{color:var(--bg);font-weight:600}
+.sh-foot{background:var(--brown);color:var(--on-brown);border-top:0}
+.f>span,.sec{color:var(--muted);font-weight:600}
+.step{border-bottom-color:rgba(0,0,0,.14)}
+.step.has{background:rgba(255,255,255,.35);margin:0 -10px;padding-left:10px;padding-right:10px}
+.step.has .s-name{color:var(--ink)}
+.s-price{color:var(--muted)}
+.s-ctrl button{background:#fff;border-color:rgba(0,0,0,.15)}
+.s-ctrl .plus{background:var(--accent);color:#fff;border-color:var(--accent)}
+.steps details{border-bottom-color:rgba(0,0,0,.18)}
+.steps summary{font-size:19px;font-weight:600}
+.steps summary::after{color:var(--ink)}
+.seg{border-color:rgba(0,0,0,.2)}
+.seg button[aria-pressed=true]{background:#000;color:var(--bg)}
+.toggles .tog{background:#fff;border-color:rgba(0,0,0,.15);color:var(--muted)}
+#toast{background:var(--brown);color:var(--on-brown)}
+:focus-visible{outline-color:#000}
+</style>
+<style id="printCss">
+#printArea{font:11pt/1.35 -apple-system,"Helvetica Neue",Arial,sans-serif;color:#000;background:#fff}
+#printArea h1{font-size:17pt;margin:0 0 2pt}
+#printArea .pmeta{color:#333;margin:0 0 8pt}
+#printArea h2{font-size:12pt;margin:14pt 0 4pt;padding-bottom:2pt;border-bottom:1pt solid #000}
+#printArea .cols{display:flex;gap:22pt;align-items:flex-start}
+#printArea .cols>div{flex:1}
+#printArea table{width:100%;border-collapse:collapse}
+#printArea th,#printArea td{text-align:left;vertical-align:top;padding:4pt;border-bottom:.5pt solid #999}
+#printArea th{font-size:9pt;color:#333;font-weight:600;border-bottom:1pt solid #000}
+#printArea .r{text-align:right;white-space:nowrap}
+#printArea .sum td{font-weight:700;border-top:1pt solid #000;border-bottom:0}
+#printArea tr{break-inside:avoid;page-break-inside:avoid}
+#printArea .box{display:inline-block;width:12pt;height:12pt;border:1pt solid #000}
+#printArea .note{font-style:italic}
+#printArea .matrix{table-layout:fixed;margin-top:6pt}
+#printArea .matrix th,#printArea .matrix td{border:.75pt solid #000;padding:3pt 4pt;height:19pt;vertical-align:middle;overflow-wrap:anywhere}
+#printArea .matrix th{font-size:9pt;color:#000;font-weight:700}
+#printArea .matrix .sorte{width:26%}
+#printArea .matrix .num{text-align:center}
+#printArea .matrix .msum td{font-weight:700;border-top:1.5pt solid #000}
+#printArea .matrix .sep td{font-weight:600;background:#eee;font-size:9pt}
+#printArea .pb{break-before:page;page-break-before:always}
+@page{size:A4;margin:14mm}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><svg viewBox="0 0 100 100" aria-hidden="true"><rect x="12" y="10" width="62" height="56" rx="8" fill="#3661B4"/><rect x="12" y="10" width="28" height="80" fill="#3661B4"/><circle cx="72" cy="70" r="20" fill="#3661B4"/><text x="43" y="33" text-anchor="middle" font-family="Oswald,Arial Narrow,sans-serif" font-weight="700" font-size="17" fill="#FFC428">Puxi’s</text></svg><h1 id="title">Bestellungen</h1></div>
+  <button class="add" id="addBtn" data-act="addTop">Neu</button>
+</header>
+
+<main>
+  <section id="v-list">
+    <div class="filters">
+      <div class="row">
+        <select id="fPeriod" aria-label="Zeitraum">
+          <option value="upcoming">Ab heute</option>
+          <option value="day">Tag</option>
+          <option value="month">Monat</option>
+          <option value="all">Alle</option>
+        </select>
+        <input type="date" id="fDay" aria-label="Tag">
+        <input type="month" id="fMonth" aria-label="Monat">
+      </div>
+      <div class="chips" role="group" aria-label="Status">
+        <button class="chip" data-s="all">Alle</button>
+        <button class="chip" data-s="unpaid">Offen</button>
+        <button class="chip" data-s="paid">Bezahlt</button>
+      </div>
+      <input type="search" id="fQ" placeholder="Name, Telefon oder Rechnungsnr." aria-label="Suchen">
+    </div>
+    <div id="listBody"></div>
+  </section>
+
+  <section id="v-sum" hidden>
+    <div class="row">
+      <select id="sPeriod" aria-label="Zeitraum">
+        <option value="day">Tag</option>
+        <option value="week">Woche</option>
+        <option value="month">Monat</option>
+      </select>
+      <button class="arrow" data-act="sPrev" aria-label="Zurück">‹</button>
+      <input type="date" id="sDay" aria-label="Tag">
+      <input type="month" id="sMonth" aria-label="Monat">
+      <button class="arrow" data-act="sNext" aria-label="Weiter">›</button>
+    </div>
+    <div id="sumBody"></div>
+  </section>
+
+  <section id="v-prod" hidden></section>
+  <section id="v-data" hidden></section>
+</main>
+
+<nav class="tabs">
+  <button data-tab="list" aria-current="page">Bestellungen</button>
+  <button data-tab="sum">Übersicht</button>
+  <button data-tab="prod">Produkte</button>
+  <button data-tab="data">Daten</button>
+</nav>
+
+<div id="sheet" class="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="shTitle">
+  <div class="sh-head">
+    <button class="link" data-act="close">Abbrechen</button>
+    <h2 id="shTitle"></h2>
+    <button class="link strong" data-act="saveSheet">Sichern</button>
+  </div>
+  <div class="sh-body" id="shBody"></div>
+  <div class="sh-foot" id="shFoot"><span>Summe</span><span id="shTotal"></span></div>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="printArea"></div>
+
+<script>
+'use strict';
+const KEY = 'puxi-jahr-v1';
+const CATALOG = 3;
+const DEFAULT_SORTEN = ['Schinken','Schinken/Käse','Wurst','Wurst/Käse','Salami','Salami/Camembert','Bauern','Prosciutto','Mozzarella','Käse','Camembert','Ei mit Ei','Lachs','Thunfisch','Aufstrich','Speck/Ei','Wurströllchen','Vegan','Kaviar','Roast Beef','Matjes'];
+const S='Special', B='Brötchen', H='Häppchen', P='Partygebäck', A='Aufschnittplatten', J='Gefüllte Jour/Weckerl', K='Kalte Schmankerl', V='Verpackung und Lieferung';
+const one = n => '1× ' + n;
+const DEFAULT_PRODUCTS = [
+  {id:'p1', cat:S, name:'Special Brötchenkarton', price:64, comp:'4× Schinken/Käse\n4× Prosciutto/Salami\n4× Käse/Mozzarella\n4× Räucherlachs\n2× Ei/Curry\n2× Thunfisch'},
+  {id:'p2', cat:S, name:'Aufschnittplatte Käse', price:47, comp:''},
+  {id:'p3', cat:S, name:'Aufschnittplatte Deluxe', price:47, comp:''},
+  {id:'p4', cat:S, name:'Antipastiplatte', price:19, comp:''},
+  {id:'p5', cat:S, name:'Partybrezel Premiumfüllung', price:40, comp:''},
+  {id:'p6', cat:S, name:'Partybrezel vegetarisch', price:52, comp:''},
+  {id:'p7', cat:S, name:'Hühnerschnitzelsemmerl', price:4.9, comp:one('Hühnerschnitzelsemmerl')},
+  {id:'p8', cat:S, name:'Gemischtes Jour-Gebäck', price:null, comp:''},
+
+  {id:'b1', cat:B, name:'Brötchen Aufstrich', price:2.5, comp:one('Brötchen Aufstrich'), info:'mind. 15 Stück'},
+  {id:'b2', cat:B, name:'Brötchen Premium', price:2.9, comp:one('Brötchen Premium'), info:'mind. 15 Stück'},
+  {id:'b3', cat:B, name:'Brötchen Exclusiv', price:3.2, comp:one('Brötchen Exclusiv'), info:'mind. 15 Stück'},
+  {id:'b7', cat:B, name:'Brötchen Matjes', price:3.5, comp:one('Brötchen Matjes')},
+  {id:'b9', cat:B, name:'Brötchen Kaviar', price:3.5, comp:one('Brötchen Kaviar')},
+  {id:'b11', cat:B, name:'Brötchen Roastbeef', price:3.5, comp:one('Brötchen Roastbeef'), info:'ab 15 Stück'},
+  {id:'b13', cat:B, name:'Brötchen vegan', price:2.9, comp:one('Brötchen vegan'), info:'ab 10 Stück'},
+
+  {id:'b4', cat:H, name:'Häppchen Aufstrich', price:2.0, comp:one('Häppchen Aufstrich'), info:'mind. 15 Stück'},
+  {id:'b5', cat:H, name:'Häppchen Premium', price:2.3, comp:one('Häppchen Premium'), info:'mind. 15 Stück'},
+  {id:'b6', cat:H, name:'Häppchen Exclusiv', price:2.5, comp:one('Häppchen Exclusiv'), info:'mind. 15 Stück'},
+  {id:'b8', cat:H, name:'Häppchen Matjes', price:3.0, comp:one('Häppchen Matjes')},
+  {id:'b10', cat:H, name:'Häppchen Kaviar', price:3.0, comp:one('Häppchen Kaviar')},
+  {id:'b12', cat:H, name:'Häppchen Roastbeef', price:3.0, comp:one('Häppchen Roastbeef'), info:'ab 15 Stück'},
+  {id:'b14', cat:H, name:'Häppchen vegan', price:2.3, comp:one('Häppchen vegan'), info:'ab 10 Stück'},
+
+  {id:'g1', cat:P, name:'Partygebäck Aufstrich, 4–5 Personen', price:30, comp:''},
+  {id:'g2', cat:P, name:'Partygebäck Aufstrich, 7–8 Personen', price:48, comp:''},
+  {id:'g3', cat:P, name:'Partygebäck Premium, 4–5 Personen', price:40, comp:''},
+  {id:'g4', cat:P, name:'Partygebäck Premium, 7–8 Personen', price:64, comp:''},
+  {id:'g5', cat:P, name:'Partygebäck Exclusiv, 4–5 Personen', price:52, comp:''},
+  {id:'g6', cat:P, name:'Partygebäck Exclusiv, 7–8 Personen', price:83, comp:''},
+  {id:'g7', cat:P, name:'Gefülltes Baguette Aufstrich', price:15, comp:''},
+  {id:'g8', cat:P, name:'Gefülltes Baguette Premium', price:20, comp:''},
+  {id:'g9', cat:P, name:'Gefülltes Baguette Exclusiv', price:25, comp:''},
+  {id:'g10', cat:P, name:'Puxi’s XXL Jumbo Aufstrich', price:19, comp:''},
+  {id:'g11', cat:P, name:'Puxi’s XXL Jumbo Premium', price:27, comp:''},
+  {id:'g12', cat:P, name:'Puxi’s XXL Jumbo Exclusiv', price:34, comp:''},
+  {id:'g13', cat:P, name:'Aufpreis Laugengebäck', price:6, comp:''},
+  {id:'g14', cat:P, name:'Aufpreis Form (Herz, Ringe, Stern …)', price:6, comp:''},
+
+  {id:'a1', cat:A, name:'Gemischte Platte für 2 Personen', price:32, comp:'', info:'ca. 0,5 kg'},
+  {id:'a2', cat:A, name:'Puxi’s Hausplatte klein', price:34, comp:'', info:'3–4 Personen, ca. 0,8 kg'},
+  {id:'a3', cat:A, name:'Puxi’s Hausplatte groß', price:68, comp:'', info:'6–7 Personen, ca. 1,4 kg'},
+  {id:'a4', cat:A, name:'Bauernplatte klein', price:39, comp:'', info:'3–4 Personen, ca. 0,8 kg'},
+  {id:'a5', cat:A, name:'Bauernplatte groß', price:78, comp:'', info:'6–7 Personen, ca. 1,4 kg'},
+  {id:'a6', cat:A, name:'Käseplatte klein', price:39, comp:'', info:'3–4 Personen, ca. 0,8 kg'},
+  {id:'a7', cat:A, name:'Käseplatte groß', price:78, comp:'', info:'6–7 Personen, ca. 1,4 kg'},
+  {id:'a8', cat:A, name:'Deluxe Platte klein', price:39, comp:'', info:'3–4 Personen, ca. 0,8 kg'},
+  {id:'a9', cat:A, name:'Deluxe Platte groß', price:78, comp:'', info:'6–7 Personen, ca. 1,4 kg'},
+
+  {id:'j1', cat:J, name:'Gefüllte Weckerl Aufstrich', price:3.6, comp:one('Weckerl Aufstrich')},
+  {id:'j2', cat:J, name:'Gefüllte Weckerl Premium', price:4.8, comp:one('Weckerl Premium')},
+  {id:'j3', cat:J, name:'Gefüllte Weckerl Exclusiv', price:5.5, comp:one('Weckerl Exclusiv')},
+  {id:'j4', cat:J, name:'Gefüllte Jourweckerl Aufstrich', price:2.8, comp:one('Jourweckerl Aufstrich')},
+  {id:'j5', cat:J, name:'Gefüllte Jourweckerl Premium', price:3.5, comp:one('Jourweckerl Premium')},
+  {id:'j6', cat:J, name:'Gefüllte Jourweckerl Exclusiv', price:4.2, comp:one('Jourweckerl Exclusiv')},
+  {id:'j7', cat:J, name:'Franzosen (Baguette-Stangerl)', price:8.3, comp:one('Franzosen')},
+
+  {id:'k1', cat:K, name:'Gefüllte Schinkenrollen', price:4.5, comp:'', info:'mind. 5 Stück'},
+  {id:'k2', cat:K, name:'Kleine Schinkenröllchen', price:3.5, comp:'', info:'mind. 5 Stück'},
+  {id:'k3', cat:K, name:'½ gefülltes Ei', price:2.6, comp:'', info:'mind. 10 Stück'},
+  {id:'k4', cat:K, name:'Puxi Burger', price:5.9, comp:'', info:'mind. 10 Stück'},
+  {id:'k5', cat:K, name:'Schnitzelsemmel', price:5.9, comp:'', info:'Pute/Huhn oder Schwein'},
+  {id:'k6', cat:K, name:'Jour-Schnitzelsemmel', price:4.5, comp:'', info:'Pute/Huhn oder Schwein'},
+  {id:'k7', cat:K, name:'Jour-Laberl-Semmerl', price:4.5, comp:'', info:'mind. 10 Stück'},
+  {id:'k8', cat:K, name:'½ kg Wurst- oder Nudelsalat', price:19, comp:''},
+  {id:'k9', cat:K, name:'½ kg Salat (Kartoffel, Tomaten, Gurken …)', price:15, comp:''},
+  {id:'k10', cat:K, name:'Antipasti-Teller', price:31, comp:'', info:'2–3 Personen'},
+  {id:'k11', cat:K, name:'Tomaten-Mozzarella-Platte', price:36, comp:'', info:'ca. 3 Personen'},
+  {id:'k12', cat:K, name:'½ kg hausgemachte Aufstriche', price:12, comp:''},
+  {id:'k13', cat:K, name:'Gemischte süße Jour-Plunder', price:2.9, comp:''},
+
+  {id:'v1', cat:V, name:'Papptasse mit Spitzenpapier', price:1.5, comp:''},
+  {id:'v2', cat:V, name:'Holztasse mit Spitzenpapier', price:3, comp:''},
+  {id:'v3', cat:V, name:'Eleganter Karton', price:3, comp:''},
+  {id:'v4', cat:V, name:'Lieferung pro km', price:0.9, comp:'', info:'ab Königstetten und retour'}
+];
+
+/* ---------- Hilfen ---------- */
+const $ = s => document.querySelector(s);
+const eur = new Intl.NumberFormat('de-AT', {style:'currency', currency:'EUR'});
+const fmt = n => eur.format(n || 0);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const pad = n => String(n).padStart(2, '0');
+const isoDate = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const today = () => isoDate(new Date());
+const WDL = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+const MON = ['Jänner','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+const parseD = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const dShort = s => { const d = parseD(s); return pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear(); };
+const monthLabel = m => { const [y,mm] = m.split('-').map(Number); return MON[mm - 1] + ' ' + y; };
+const num = v => { if (v === '' || v == null) return null; const n = parseFloat(String(v).replace(/\s/g,'').replace(',', '.')); return isFinite(n) ? n : null; };
+const priceStr = p => p == null ? '' : String(p).replace('.', ',');
+function parseComp(t){
+  return String(t || '').split(/[\n,;]+/).map(s => s.trim()).filter(Boolean).map(s => {
+    const m = s.match(/^(\d+)\s*[×xX*]?\s*(.+)$/);
+    return m ? {n:+m[1], name:m[2].trim()} : {n:1, name:s};
+  });
+}
+const itemTotal = i => (i.price || 0) * i.qty;
+const orderTotal = o => o.items.reduce((s, i) => s + itemTotal(i), 0);
+const missingPrice = o => o.items.some(i => i.qty > 0 && i.price == null);
+
+let toastTimer;
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+/* ---------- Daten ---------- */
+function freshDb(){ return {products: JSON.parse(JSON.stringify(DEFAULT_PRODUCTS)), orders: [], lastBackup: null, catalog: CATALOG, sorten: [...DEFAULT_SORTEN]}; }
+function migrate(d){
+  const v = d.catalog || 1;
+  if (v < 2){
+    d.products.forEach(p => { if (!p.cat) p.cat = S; });
+    const have = new Set(d.products.map(p => p.id));
+    DEFAULT_PRODUCTS.forEach(p => { if (!have.has(p.id) && p.cat !== S) d.products.push(JSON.parse(JSON.stringify(p))); });
+  }
+  if (v < 3){
+    d.products.forEach(p => { if (p.cat === 'Brötchen und Häppchen') p.cat = /^Häppchen/.test(p.name) ? H : B; });
+  }
+  if (!Array.isArray(d.sorten)) d.sorten = [...DEFAULT_SORTEN];
+  d.catalog = CATALOG;
+  return d;
+}
+function load(){
+  try { const d = JSON.parse(localStorage.getItem(KEY)); if (d && Array.isArray(d.products) && Array.isArray(d.orders)) return migrate(d); } catch(e) {}
+  return freshDb();
+}
+let db = load();
+function save(){
+  try { localStorage.setItem(KEY, JSON.stringify(db)); }
+  catch(e) { toast('Speichern fehlgeschlagen – Speicher voll?'); }
+}
+
+const ui = {
+  tab:'list', period:'upcoming', day:today(), month:today().slice(0,7), status:'all', q:'',
+  sumPeriod:'day', sumDay:today(), sumMonth:today().slice(0,7)
+};
+let draft = null, pdraft = null, sheetMode = null;
+
+/* ---------- Liste ---------- */
+function filtered(){
+  const t = today(), q = ui.q.toLowerCase();
+  return db.orders.filter(o => {
+    if (ui.period === 'upcoming' && o.date < t) return false;
+    if (ui.period === 'day' && o.date !== ui.day) return false;
+    if (ui.period === 'month' && !o.date.startsWith(ui.month)) return false;
+    if (ui.status === 'open' && o.delivered) return false;
+    if (ui.status === 'delivered' && !o.delivered) return false;
+    if (ui.status === 'paid' && !o.paid) return false;
+    if (ui.status === 'unpaid' && o.paid) return false;
+    if (q && !(o.name.toLowerCase().includes(q) || (o.phone || '').includes(q) || (o.invoice || '').toLowerCase().includes(q) || (o.address || '').toLowerCase().includes(q))) return false;
+    return true;
+  }).sort(byDateTime);
+}
+
+function dayHead(s, sum){
+  const d = parseD(s);
+  return `<h2 class="day"><span class="dnum">${d.getDate()}</span><span class="dtxt"><b>${WDL[d.getDay()]}${s === today() ? ' (heute)' : ''}</b>${MON[d.getMonth()]} ${d.getFullYear()}</span>${sum != null ? `<span class="dsum">${fmt(sum)}</span>` : ''}</h2>`;
+}
+
+function orderCard(o){
+  const cls = o.paid ? 'is-paid' : '';
+  const items = o.items.map(i => `${i.qty}× ${esc(i.name)}`).join(', ') || '<span class="hint">Keine Produkte</span>';
+  const meta = [
+    o.time ? `<span>${esc(o.time)} Uhr</span>` : '',
+    o.mode ? `<span>${modeTxt(o)}</span>` : '',
+    o.phone ? `<a href="tel:${esc(o.phone.replace(/[^\d+]/g, ''))}">${esc(o.phone)}</a>` : '',
+    o.payment ? `<span>${esc(o.payment)}</span>` : '',
+    o.invoice ? `<span>Rechnung ${esc(o.invoice)}</span>` : ''
+  ].filter(Boolean).join('');
+  return `<article class="order ${cls}">
+    <div class="o-main" data-act="edit" data-id="${o.id}">
+      <div class="o-top"><span class="o-name">${esc(o.name)}</span><span class="o-sum">${fmt(orderTotal(o))}${missingPrice(o) ? ' <span class="warn">+ ?</span>' : ''}</span></div>
+      <div class="o-items">${items}</div>
+      ${meta ? `<div class="o-meta">${meta}</div>` : ''}
+      ${o.note ? `<div class="o-note">${esc(o.note)}</div>` : ''}
+    </div>
+    <div class="o-actions">
+      <button class="tog pay ${o.paid ? 'on' : ''}" data-act="tPay" data-id="${o.id}" aria-pressed="${!!o.paid}">Bezahlt</button>
+    </div>
+  </article>`;
+}
+
+function renderList(){
+  const list = filtered(), body = $('#listBody');
+  if (!list.length){
+    body.innerHTML = `<div class="empty"><p>${db.orders.length ? 'Keine Bestellung passt zu diesem Filter.' : 'Noch keine Bestellungen.'}</p><button class="btn primary" data-act="new">Bestellung anlegen</button></div>`;
+    return;
+  }
+  const groups = new Map();
+  list.forEach(o => { if (!groups.has(o.date)) groups.set(o.date, []); groups.get(o.date).push(o); });
+  const total = list.reduce((s, o) => s + orderTotal(o), 0);
+  let h = `<p class="count">${list.length} ${list.length === 1 ? 'Bestellung' : 'Bestellungen'}, gesamt ${fmt(total)}</p>`;
+  for (const [d, os] of groups) h += dayHead(d, os.reduce((s, o) => s + orderTotal(o), 0)) + os.map(orderCard).join('');
+  body.innerHTML = h;
+}
+function syncListFilters(){
+  $('#fDay').hidden = ui.period !== 'day';
+  $('#fMonth').hidden = ui.period !== 'month';
+  document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', c.dataset.s === ui.status));
+}
+
+/* ---------- Übersicht ---------- */
+function aggregate(orders){
+  const a = {count:orders.length, total:0, paid:0, toDeliver:0, missing:0, products:new Map(), rolls:new Map(), sorten:new Map()};
+  for (const o of orders){
+    const t = orderTotal(o);
+    a.total += t; if (o.paid) a.paid += t; if (!o.delivered) a.toDeliver++; if (missingPrice(o)) a.missing++;
+    for (const [n, v] of Object.entries(o.sorten || {})) a.sorten.set(n, (a.sorten.get(n) || 0) + v);
+    for (const i of o.items){
+      a.products.set(i.name, (a.products.get(i.name) || 0) + i.qty);
+      for (const c of (i.comp || [])) a.rolls.set(c.name, (a.rolls.get(c.name) || 0) + c.n * i.qty);
+    }
+  }
+  return a;
+}
+const kv = (k, v, cls = '') => `<div class="kv ${cls}"><span>${esc(k)}</span><b>${v}</b></div>`;
+function sumBlock(a, head){
+  let h = `<div class="card sblock">${head}`;
+  h += kv('Bestellungen', a.count) + kv('Umsatz', fmt(a.total)) + kv('Davon bezahlt', fmt(a.paid)) + kv('Noch offen', fmt(a.total - a.paid));
+  if (a.missing) h += `<p class="warn">${a.missing} ${a.missing === 1 ? 'Bestellung' : 'Bestellungen'} ohne Preis bei Produkten „auf Anfrage“</p>`;
+  if (a.rolls.size){
+    h += '<h4>Brötchen</h4>'; let s = 0;
+    for (const [n, v] of a.rolls){ h += kv(n, v); s += v; }
+    h += kv('Brötchen gesamt', s, 'total');
+  }
+  if (a.sorten.size){
+    h += '<h4>Sorten</h4>'; let s = 0;
+    for (const [n, v] of a.sorten){ h += kv(n, v); s += v; }
+    h += kv('Sorten gesamt', s, 'total');
+  }
+  if (a.products.size){
+    h += '<h4>Produkte</h4>';
+    for (const [n, v] of a.products) h += kv(n, v + '×');
+  }
+  return h + '</div>';
+}
+const WDS = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+const addDays = (s, n) => { const d = parseD(s); d.setDate(d.getDate() + n); return isoDate(d); };
+const weekStart = s => { const d = parseD(s); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return isoDate(d); };
+function isoWeek(s){
+  const d = parseD(s); d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);
+  const w1 = new Date(d.getFullYear(), 0, 4);
+  return 1 + Math.round(((d - w1) / 864e5 - 3 + (w1.getDay() + 6) % 7) / 7);
+}
+const byDateTime = (a, b) => a.date.localeCompare(b.date) || (a.time || '99').localeCompare(b.time || '99') || a.name.localeCompare(b.name, 'de');
+function catOf(i){ const p = db.products.find(x => x.id === i.pid); return p ? (p.cat || 'Ohne Kategorie') : 'Sonstiges'; }
+function catQty(o){ const m = {}; o.items.forEach(i => { const c = catOf(i); m[c] = (m[c] || 0) + i.qty; }); return m; }
+function weekData(){
+  const ws = weekStart(ui.sumDay), we = addDays(ws, 6);
+  const orders = db.orders.filter(o => o.date >= ws && o.date <= we).sort(byDateTime);
+  const tot = {}; orders.forEach(o => { const m = catQty(o); for (const c in m) tot[c] = (tot[c] || 0) + m[c]; });
+  const cats = [...groups().keys(), 'Sonstiges'].filter(c => tot[c]);
+  return {ws, we, orders, tot, cats, head:`KW ${isoWeek(ws)}: ${dShort(ws)} bis ${dShort(we)}`};
+}
+const modeTxt = o => o.mode ? esc(o.mode) + (o.mode === 'Lieferung' && o.address ? ': ' + esc(o.address).replace(/\n/g, ', ') : '') : '';
+function weekHtml(){
+  const w = weekData();
+  if (!w.orders.length) return `<div class="empty"><p>Keine Bestellungen in ${w.head}.</p></div>`;
+  let h = `<div class="card sblock"><h2 class="mhead">${w.head}</h2>${kv('Bestellungen', w.orders.length)}${kv('Umsatz', fmt(w.orders.reduce((s, o) => s + orderTotal(o), 0)))}<h4>Mengen nach Kategorie</h4>${w.cats.map(c => kv(c, w.tot[c])).join('')}</div>`;
+  [...new Set(w.orders.map(o => o.date))].forEach(d => {
+    const os = w.orders.filter(o => o.date === d);
+    h += dayHead(d, null) + `<div class="card wcard"><div class="wscroll"><table class="wk"><tr><th>Zeit</th><th>Kunde</th>${w.cats.map(c => `<th class="n">${esc(c)}</th>`).join('')}</tr>` +
+      os.map(o => { const m = catQty(o); return `<tr><td class="t">${o.time ? esc(o.time) : '–'}</td><td><b>${esc(o.name)}</b>${o.mode ? `<small>${modeTxt(o)}</small>` : ''}</td>${w.cats.map(c => `<td class="n">${m[c] || ''}</td>`).join('')}</tr>`; }).join('') +
+      '</table></div></div>';
+  });
+  return h + '<button class="btn primary" data-act="printWeek">Wochenübersicht drucken (A4 quer)</button><button class="btn" data-act="mailWeek">Per Mail senden (PDF)</button><button class="btn" data-act="saveWeek">PDF speichern</button>';
+}
+function printWeekBody(){
+  const w = weekData();
+  let h = `<h1>Wochenübersicht ${w.head}</h1><p class="pmeta">Puxi’s Brötchenparadies: ${w.orders.length} ${w.orders.length === 1 ? 'Bestellung' : 'Bestellungen'}</p>`;
+  if (!w.orders.length) return h;
+  h += `<table><tr><th>Tag</th><th>Zeit</th><th>Kunde</th><th>Lieferung / Abholung</th>${w.cats.map(c => `<th class="r">${esc(c)}</th>`).join('')}</tr>`;
+  let last = '';
+  h += w.orders.map(o => { const m = catQty(o), d = parseD(o.date), dl = o.date !== last ? `<b>${WDS[d.getDay()]} ${pad(d.getDate())}.${pad(d.getMonth() + 1)}.</b>` : ''; last = o.date;
+    return `<tr><td>${dl}</td><td>${o.time ? esc(o.time) : ''}</td><td><b>${esc(o.name)}</b>${o.phone ? '<br>' + esc(o.phone) : ''}</td><td>${modeTxt(o)}</td>${w.cats.map(c => `<td class="r">${m[c] || ''}</td>`).join('')}</tr>`; }).join('');
+  h += `<tr class="sum"><td colspan="4">Gesamt</td>${w.cats.map(c => `<td class="r">${w.tot[c]}</td>`).join('')}</tr></table>`;
+  return h;
+}
+function renderSum(){
+  const p = ui.sumPeriod;
+  $('#sDay').hidden = p === 'month'; $('#sMonth').hidden = p !== 'month';
+  $('#sDay').value = ui.sumDay; $('#sMonth').value = ui.sumMonth;
+  const body = $('#sumBody');
+  if (p === 'week'){ body.innerHTML = weekHtml(); return; }
+  const isDay = p === 'day';
+  const orders = db.orders.filter(o => isDay ? o.date === ui.sumDay : o.date.startsWith(ui.sumMonth));
+  if (!orders.length){
+    body.innerHTML = `<div class="empty"><p>Keine Bestellungen ${isDay ? 'am ' + dShort(ui.sumDay) : 'im ' + monthLabel(ui.sumMonth)}.</p></div>`;
+    return;
+  }
+  if (isDay){
+    body.innerHTML = sumBlock(aggregate(orders), dayHead(ui.sumDay, null)) +
+      '<button class="btn primary" data-act="print">Tagesbestellung drucken (A4)</button>' +
+      '<button class="btn" data-act="mailDay">Per Mail senden (PDF)</button>' +
+      '<button class="btn" data-act="saveDay">PDF speichern</button>';
+    return;
+  }
+  let h = sumBlock(aggregate(orders), `<h2 class="mhead">${monthLabel(ui.sumMonth)} gesamt</h2>`);
+  [...new Set(orders.map(o => o.date))].sort().forEach(d => { h += sumBlock(aggregate(orders.filter(o => o.date === d)), dayHead(d, null)); });
+  body.innerHTML = h;
+}
+function shiftSum(dir){
+  if (ui.sumPeriod === 'day') ui.sumDay = addDays(ui.sumDay, dir);
+  else if (ui.sumPeriod === 'week') ui.sumDay = addDays(ui.sumDay, 7 * dir);
+  else { const [y, m] = ui.sumMonth.split('-').map(Number); const x = new Date(y, m - 1 + dir, 1); ui.sumMonth = x.getFullYear() + '-' + pad(x.getMonth() + 1); }
+  renderSum();
+}
+
+/* ---------- Produkte ---------- */
+function groups(){
+  const m = new Map();
+  db.products.forEach(p => { const c = p.cat || 'Ohne Kategorie'; if (!m.has(c)) m.set(c, []); m.get(c).push(p); });
+  return m;
+}
+function renderProducts(){
+  if (!ui.prodUnlocked){
+    $('#v-prod').innerHTML = `<div class="card lock"><h3>Produkte sind gesperrt</h3>
+      <p>Gib den Code ein, um Produkte und Preise zu ändern.</p>
+      <input id="pinIn" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off" aria-label="Code">
+      <button class="btn primary" data-act="unlock">Entsperren</button></div>`;
+    return;
+  }
+  let h = '';
+  for (const [cat, ps] of groups()){
+    h += `<h2 class="pcat">${esc(cat)}</h2><div class="card plist">` + ps.map((p, i) => `<div class="prow">
+      <button class="p-main" data-act="editProd" data-id="${p.id}">
+        <span class="p-top"><b>${esc(p.name)}</b><span>${p.price == null ? 'auf Anfrage' : fmt(p.price)}</span></span>
+        ${p.info ? `<small>${esc(p.info)}</small>` : ''}
+        ${p.comp ? `<small>Zählt als ${esc(parseComp(p.comp).map(c => c.n + '× ' + c.name).join(', '))}</small>` : ''}
+      </button>
+      <span class="p-ord">
+        <button data-act="pUp" data-id="${p.id}" aria-label="${esc(p.name)} nach oben" ${i ? '' : 'disabled'}>↑</button>
+        <button data-act="pDown" data-id="${p.id}" aria-label="${esc(p.name)} nach unten" ${i < ps.length - 1 ? '' : 'disabled'}>↓</button>
+      </span></div>`).join('') + '</div>';
+  }
+  $('#v-prod').innerHTML = (h || '<p class="hint">Noch keine Produkte.</p>') + `
+    <button class="btn primary" data-act="newProd">Produkt hinzufügen</button>
+    <h2 class="pcat">Sorten für den Ausdruck</h2>
+    <div class="card"><p>Eine Sorte pro Zeile. Diese Liste erscheint in der Bestellmaske und als Zeilen im Tagesausdruck.</p>
+      <textarea id="sortenIn" rows="12">${esc(db.sorten.join('\n'))}</textarea>
+      <button class="btn" data-act="saveSorten">Sorten sichern</button></div>
+    <p class="hint">Preisänderungen gelten für neue Bestellungen. Bestehende Bestellungen behalten den Preis, mit dem sie aufgenommen wurden.</p>
+    <p class="hint">Der Inhalt eines Produkts (z. B. „4× Räucherlachs“) wird in der Übersicht als Brötchen gezählt.</p>`;
+}
+function moveProduct(id, dir){
+  const i = db.products.findIndex(p => p.id === id); if (i < 0) return;
+  const cat = db.products[i].cat;
+  let j = i + dir;
+  while (j >= 0 && j < db.products.length && db.products[j].cat !== cat) j += dir;
+  if (j < 0 || j >= db.products.length) return;
+  [db.products[i], db.products[j]] = [db.products[j], db.products[i]];
+  save(); renderProducts();
+}
+
+/* ---------- Daten ---------- */
+function renderData(){
+  const lb = db.lastBackup ? new Date(db.lastBackup).toLocaleDateString('de-AT') : 'noch nie';
+  $('#v-data').innerHTML = `
+    <div class="card"><h3>CSV-Export</h3>
+      <p>Für Excel oder Numbers, getrennt mit Strichpunkt.</p>
+      <button class="btn" data-act="csvAll">Alle Bestellungen (${db.orders.length})</button>
+      <button class="btn" data-act="csvFilter">Wie in der Liste gefiltert (${filtered().length})</button>
+    </div>
+    <div class="card"><h3>Sicherung</h3>
+      <p>Die Daten liegen nur auf diesem iPhone. Speichere regelmäßig eine Sicherung, z. B. in der Dateien-App oder per Mail.</p>
+      <button class="btn primary" data-act="backup">Sicherung speichern</button>
+      <label class="btn">Sicherung laden<input type="file" id="importFile" accept=".json,application/json" hidden></label>
+      <p class="hint" style="margin-top:10px">Zuletzt gesichert: ${lb}</p>
+    </div>`;
+}
+async function shareFile(name, text, type, shareText, saveOnly){
+  const blob = new Blob([text], {type});
+  try {
+    const file = new File([blob], name, {type});
+    if (!saveOnly && navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share(shareText ? {files:[file], title:shareText, text:shareText} : {files:[file], title:name}); return true; }
+  } catch(e){ if (e.name === 'AbortError') return false; }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  return true;
+}
+function toCSV(orders){
+  orders = [...orders].sort((a, b) => a.date.localeCompare(b.date) || a.name.localeCompare(b.name, 'de'));
+  const used = new Set(orders.flatMap(o => o.items.map(i => i.name)));
+  const pnames = [...new Set([...db.products.map(p => p.name), ...used])].filter(n => used.has(n));
+  const dec = n => (n || 0).toFixed(2).replace('.', ',');
+  const q = v => { v = String(v ?? ''); return /[;"\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+  const head = ['Lieferdatum','Uhrzeit','Name','Telefon','Lieferung/Abholung','Straße','Nr.','PLZ','Ort',...pnames,'Betrag','Zahlungsart','Rechnungsnummer','Bezahlt','Notiz'];
+  const rows = orders.map(o => [
+    dShort(o.date), o.time || '', o.name, o.phone || '', o.mode || '', ...(o.addr ? [o.addr.street || '', o.addr.no || '', o.addr.zip || '', o.addr.city || ''] : [o.address || '', '', '', '']),
+    ...pnames.map(n => o.items.filter(i => i.name === n).reduce((s, i) => s + i.qty, 0) || ''),
+    dec(orderTotal(o)) + (missingPrice(o) ? ' (+ Preis fehlt)' : ''),
+    o.payment || '', o.invoice || '', o.paid ? 'ja' : 'nein', o.note || ''
+  ]);
+  return '\ufeff' + [head, ...rows].map(r => r.map(q).join(';')).join('\r\n');
+}
+async function importBackup(file){
+  try {
+    const d = JSON.parse(await file.text());
+    if (!Array.isArray(d.products) || !Array.isArray(d.orders)) throw new Error();
+    if (!confirm(`Sicherung mit ${d.orders.length} Bestellungen laden? Die aktuellen Daten auf diesem iPhone werden ersetzt.`)) return;
+    db = migrate(d); save(); renderAll(); toast('Sicherung geladen');
+  } catch(e){ toast('Diese Datei ist keine gültige Sicherung'); }
+}
+
+/* ---------- Drucken ---------- */
+const PRODUCT_CODE = '8120';
+const norm = s => String(s).toLowerCase().replace(/\s+/g, '');
+function sortenMatrix(orders){
+  const mk = n => ({name:n, per:orders.map(() => 0)});
+  const rows = db.sorten.map(mk), byKey = new Map(rows.map(r => [norm(r.name), r])), extra = new Map();
+  const add = (n, v, ci) => {
+    const k = norm(n); let r = byKey.get(k);
+    if (!r){ r = extra.get(k); if (!r){ r = mk(n); extra.set(k, r); } }
+    r.per[ci] += v;
+  };
+  orders.forEach((o, ci) => {
+    for (const [n, v] of Object.entries(o.sorten || {})) add(n, v, ci);
+    for (const i of o.items) for (const c of (i.comp || [])) add(c.name, c.n * i.qty, ci);
+  });
+  return {rows, extra:[...extra.values()]};
+}
+function matrixHtml(date, orders){
+  let {rows, extra} = sortenMatrix(orders);
+  const tot = r => r.per.reduce((s, v) => s + v, 0);
+  rows = rows.filter(r => tot(r) > 0);
+  extra = extra.filter(r => tot(r) > 0);
+  const all = [...rows, ...extra];
+  if (!all.length) return '<p class="pmeta">Für diesen Tag sind keine Sorten oder Brötchen eingetragen.</p>';
+  const cols = orders.map((o, ci) => ci).filter(ci => all.some(r => r.per[ci] > 0));
+  const COLS = 7, chunks = [];
+  for (let i = 0; i < cols.length; i += COLS) chunks.push(cols.slice(i, i + COLS));
+  return chunks.map((cs, k) => {
+    const line = r => `<tr><td class="sorte">${esc(r.name)}</td><td class="num"><b>${tot(r)}</b></td>${cs.map(ci => `<td class="num">${r.per[ci] || ''}</td>`).join('')}</tr>`;
+    let h = `<table class="matrix${k ? ' pb' : ''}"><tr><th class="sorte">Datum: ${dShort(date)}</th><th class="num">Gesamt</th>${cs.map(ci => `<th class="num">${esc(orders[ci].name)}</th>`).join('')}</tr>`;
+    if (rows.length){
+      h += rows.map(line).join('');
+      h += `<tr class="msum"><td class="sorte">Summe</td><td class="num">${rows.reduce((s, r) => s + tot(r), 0)}</td>${cs.map(ci => `<td class="num">${rows.reduce((s, r) => s + r.per[ci], 0) || ''}</td>`).join('')}</tr>`;
+    }
+    if (extra.length) h += `<tr class="sep"><td colspan="${cs.length + 2}">Weitere aus den bestellten Produkten</td></tr>` + extra.map(line).join('');
+    return h + '</table>';
+  }).join('');
+}
+function printBody(date){
+  const orders = db.orders.filter(o => o.date === date).sort(byDateTime);
+  const a = aggregate(orders), d = parseD(date);
+  let h = `<h1>Bestellungen für ${WDL[d.getDay()]}, ${d.getDate()}. ${MON[d.getMonth()]} ${d.getFullYear()}</h1>
+    <p class="pmeta">Puxi’s Brötchenparadies: ${a.count} ${a.count === 1 ? 'Bestellung' : 'Bestellungen'}, Umsatz ${fmt(a.total)}, davon bezahlt ${fmt(a.paid)}, offen ${fmt(a.total - a.paid)}</p>`;
+  h += matrixHtml(date, orders);
+  h += `<h2 class="pb">Bestellungen ${dShort(date)}</h2><table><tr><th></th><th>Kunde</th><th>Produkte</th><th>Notiz</th><th class="r">Betrag</th></tr>`;
+  h += orders.map(o => `<tr><td><span class="box"></span></td>
+    <td>${o.time ? '<b>' + esc(o.time) + ' Uhr</b><br>' : ''}<b>${esc(o.name)}</b>${o.phone ? '<br>' + esc(o.phone) : ''}${o.mode ? '<br>' + modeTxt(o) : ''}${o.invoice ? '<br>Rechnung ' + esc(o.invoice) : ''}</td>
+    <td>${o.items.map(i => `${i.qty}× ${esc(i.name)}${i.price == null ? ' (Preis fehlt)' : ''}`).join('<br>')}</td>
+    <td class="note">${esc(o.note).replace(/\n/g, '<br>')}</td>
+    <td class="r">${fmt(orderTotal(o))}<br>${o.paid ? 'bezahlt' : 'offen'}${o.payment ? '<br>' + esc(o.payment) : ''}</td></tr>`).join('');
+  h += `<tr class="sum"><td></td><td colspan="3">Gesamt</td><td class="r">${fmt(a.total)}</td></tr></table>`;
+  return h;
+}
+function doPrint(){
+  $('#printArea').innerHTML = printBody(ui.sumDay);
+  window.print();
+}
+function setLandscape(on){
+  let st = document.getElementById('pgOrient');
+  if (!st){ st = document.createElement('style'); st.id = 'pgOrient'; document.head.appendChild(st); }
+  st.textContent = on ? '@page{size:A4 landscape;margin:12mm}' : '';
+}
+function doPrintWeek(){
+  $('#printArea').innerHTML = printWeekBody();
+  setLandscape(true);
+  window.addEventListener('afterprint', () => setLandscape(false), {once:true});
+  window.print();
+}
+async function printWeekFile(){
+  const doc = `<!doctype html><html lang="de-AT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Wochenübersicht KW ${isoWeek(weekStart(ui.sumDay))}</title>${$('#printCss').outerHTML}<style>@page{size:A4 landscape;margin:12mm}</style></head><body style="margin:0;background:#fff"><div id="printArea" style="padding:12px">${printWeekBody()}</div></body></html>`;
+  await shareFile(`wochenuebersicht-${weekStart(ui.sumDay)}.html`, doc, 'text/html');
+}
+async function printFile(){
+  const doc = `<!doctype html><html lang="de-AT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Bestellungen ${dShort(ui.sumDay)}</title>${$('#printCss').outerHTML}</head><body style="margin:0;background:#fff"><div id="printArea" style="padding:12px">${printBody(ui.sumDay)}</div></body></html>`;
+  await shareFile(`bestellungen-${ui.sumDay}.html`, doc, 'text/html');
+}
+
+/* ---------- PDF per Mail ---------- */
+const PDF_LIB = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+let pdfLibPromise = null;
+function loadPdfLib(){
+  if (window.html2pdf) return Promise.resolve();
+  if (!pdfLibPromise) pdfLibPromise = new Promise((res, rej) => {
+    const s = document.createElement('script'); s.src = PDF_LIB;
+    s.onload = res; s.onerror = () => { pdfLibPromise = null; rej(new Error('lib')); };
+    document.head.appendChild(s);
+  });
+  return pdfLibPromise;
+}
+async function mailPdf(kind, saveOnly){
+  const week = kind === 'week';
+  const name = week ? `wochenuebersicht-kw${isoWeek(weekStart(ui.sumDay))}-${weekStart(ui.sumDay)}.pdf` : `bestellungen-${ui.sumDay}.pdf`;
+  const label = week ? `Wochenübersicht KW ${isoWeek(weekStart(ui.sumDay))}` : `Bestellungen ${dShort(ui.sumDay)}`;
+  toast('PDF wird erstellt …');
+  try { await loadPdfLib(); }
+  catch(e){ toast('PDF-Funktion nicht geladen. Bitte einmal mit Internet öffnen.'); return; }
+  const area = $('#printArea');
+  area.innerHTML = week ? printWeekBody() : printBody(ui.sumDay);
+  area.style.cssText = `display:block;position:fixed;left:-20000px;top:0;width:${week ? 1030 : 700}px;background:#fff`;
+  try {
+    const blob = await html2pdf().set({
+      margin: 12, filename: name,
+      image: {type:'jpeg', quality:0.95},
+      html2canvas: {scale:2, backgroundColor:'#ffffff', windowWidth: week ? 1030 : 700},
+      jsPDF: {unit:'mm', format:'a4', orientation: week ? 'landscape' : 'portrait'},
+      pagebreak: {mode:['css', 'legacy'], before:'.pb', avoid:'tr'}
+    }).from(area).outputPdf('blob');
+    area.style.cssText = '';
+    const ok = await shareFile(name, blob, 'application/pdf', `${label} – Puxi’s Brötchenparadies`, saveOnly);
+    if (ok && saveOnly) toast('PDF gespeichert');
+  } catch(e){
+    area.style.cssText = '';
+    toast('PDF konnte nicht erstellt werden');
+  }
+}
+
+/* ---------- Bestellung bearbeiten ---------- */
+function openSheet(){ $('#sheet').hidden = false; document.body.classList.add('locked'); $('#shBody').scrollTop = 0; }
+function closeSheet(){ $('#sheet').hidden = true; document.body.classList.remove('locked'); draft = pdraft = sheetMode = null; }
+
+function openOrder(id){
+  const o = id ? db.orders.find(x => x.id === id) : null;
+  draft = o ? JSON.parse(JSON.stringify(o)) : {
+    id:null, date: ui.period === 'day' ? ui.day : today(), name:'', phone:'', items:[], note:'',
+    payment:'', invoice:'', delivered:false, paid:false, time:'', mode:'', address:''
+  };
+  if (!draft.sorten) draft.sorten = {};
+  if (!draft.addr) draft.addr = {street: draft.address || '', no:'', zip:'', city:''};
+  sheetMode = 'order';
+  $('#shTitle').textContent = o ? 'Bestellung' : 'Neue Bestellung';
+  $('#shFoot').hidden = false;
+  $('#shBody').innerHTML = `
+    <div class="two"><label><span>Datum</span><input type="date" data-f="date" value="${esc(draft.date)}"></label><label><span>Uhrzeit</span><input type="time" data-f="time" value="${esc(draft.time || '')}"></label></div>
+    <label class="f"><span>Name</span><input data-f="name" value="${esc(draft.name)}" autocomplete="off" autocapitalize="words"></label>
+    <label class="f"><span>Telefon</span><input type="tel" data-f="phone" value="${esc(draft.phone)}" inputmode="tel" autocomplete="off"></label>
+    <div class="f"><span>Lieferung oder Abholung</span>
+      <div class="seg" data-seg="mode">
+        <button type="button" data-v="Lieferung">Lieferung</button>
+        <button type="button" data-v="Abholung">Abholung</button>
+      </div></div>
+    <div class="f" id="addrWrap" ${draft.mode === 'Lieferung' ? '' : 'hidden'}><span>Lieferadresse</span>
+      <div class="two addr"><label><span>Straße</span><input data-a="street" value="${esc(draft.addr.street)}" autocomplete="off" autocapitalize="words"></label><label><span>Nr.</span><input data-a="no" value="${esc(draft.addr.no)}" autocomplete="off"></label></div>
+      <div class="two addr2"><label><span>PLZ</span><input data-a="zip" value="${esc(draft.addr.zip)}" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="off"></label><label><span>Ort</span><input data-a="city" value="${esc(draft.addr.city)}" autocomplete="off" autocapitalize="words"></label></div>
+    </div>
+    <p class="sec">Produkte</p>
+    <div class="steps" id="stepList"></div>
+    <p class="sec">Sorten für den Ausdruck</p>
+    <div class="steps" id="sortList"></div>
+    <label class="f"><span>Notiz</span><textarea data-f="note" rows="3">${esc(draft.note)}</textarea></label>
+    <div class="f"><span>Zahlungsart</span>
+      <div class="seg" data-seg="payment">
+        <button type="button" data-v="Überweisung">Überweisung</button>
+        <button type="button" data-v="Bar">Bar</button>
+      </div></div>
+    <label class="f"><span>Rechnungsnummer</span><input data-f="invoice" value="${esc(draft.invoice)}" autocomplete="off"></label>
+    <div class="toggles">
+      <button type="button" class="tog pay ${draft.paid ? 'on' : ''}" data-tg="paid" aria-pressed="${draft.paid}">Bezahlt</button>
+    </div>
+    ${o ? '<button type="button" class="btn danger" data-act="delOrder">Bestellung löschen</button>' : ''}`;
+  renderSteps(true); renderSorten(true); renderSeg(); openSheet();
+}
+function stepRow(pid, name, price, it, onReq, info){
+  const q = it ? it.qty : 0;
+  const pr = onReq ? 'Preis auf Anfrage' : fmt(price) + (q ? ', zusammen ' + fmt(price * q) : '');
+  return `<div class="step ${q ? 'has' : ''}">
+    <div><div class="s-name">${esc(name)}</div><div class="s-price">${pr}</div>${info ? `<div class="s-price">${esc(info)}</div>` : ''}</div>
+    <div class="s-ctrl">
+      <button type="button" data-step="-1" data-pid="${pid}" aria-label="${esc(name)} weniger" ${q ? '' : 'disabled'}>−</button>
+      <input class="s-qty" type="text" inputmode="numeric" pattern="[0-9]*" data-qty="${pid}" value="${q}" aria-label="${esc(name)} Stückzahl" autocomplete="off">
+      <button type="button" class="plus" data-step="1" data-pid="${pid}" aria-label="${esc(name)} mehr">+</button>
+    </div>
+    ${onReq && q ? `<label class="s-pp">Preis pro Stück in €<input inputmode="decimal" data-pp="${pid}" value="${esc(priceStr(it.price))}" placeholder="0,00"></label>` : ''}
+  </div>`;
+}
+function renderSteps(first){
+  const open = new Set([...document.querySelectorAll('#stepList details[open]')].map(d => d.dataset.cat));
+  const sec = (cat, rows, n) => `<details data-cat="${esc(cat)}" ${(first ? n > 0 : open.has(cat)) ? 'open' : ''}><summary><span>${esc(cat)}</span>${n ? `<span class="badge">${n}</span>` : ''}</summary>${rows.join('')}</details>`;
+  let h = '';
+  const seen = new Set();
+  for (const [cat, ps] of groups()){
+    let n = 0;
+    const rows = ps.map(p => {
+      seen.add(p.id);
+      const it = draft.items.find(i => i.pid === p.id);
+      if (it) n += it.qty;
+      return stepRow(p.id, it ? it.name : p.name, it ? it.price : p.price, it, it ? !!it.onRequest : p.price == null, p.info);
+    });
+    h += sec(cat, rows, n);
+  }
+  const orphans = draft.items.filter(it => !seen.has(it.pid));
+  if (orphans.length) h += sec('Nicht mehr im Sortiment', orphans.map(it => stepRow(it.pid, it.name, it.price, it, !!it.onRequest)), orphans.reduce((s, i) => s + i.qty, 0));
+  $('#stepList').innerHTML = h;
+  if (first && orphans.length) $('#stepList details:last-child').open = true;
+  updateTotal();
+}
+function setQty(pid, q){
+  let it = draft.items.find(i => i.pid === pid);
+  if (!it){
+    if (!q) return;
+    const p = db.products.find(x => x.id === pid); if (!p) return;
+    it = {pid, name:p.name, price:p.price, onRequest:p.price == null, qty:0, comp:parseComp(p.comp)};
+    draft.items.push(it);
+  }
+  it.qty = q;
+  if (!q && db.products.some(p => p.id === pid)) draft.items = draft.items.filter(i => i !== it);
+}
+function updateRow(inp){
+  const pid = inp.dataset.qty, it = draft.items.find(i => i.pid === pid), q = it ? it.qty : 0;
+  const p = db.products.find(x => x.id === pid);
+  const row = inp.closest('.step');
+  row.classList.toggle('has', q > 0);
+  row.querySelector('[data-step="-1"]').disabled = !q;
+  const onReq = it ? !!it.onRequest : !p || p.price == null;
+  if (!onReq){ const price = it ? it.price : p.price; row.querySelector('.s-price').textContent = fmt(price) + (q ? ', zusammen ' + fmt(price * q) : ''); }
+  const det = row.closest('details');
+  if (det){
+    const n = [...det.querySelectorAll('[data-qty]')].reduce((s, x) => { const i = draft.items.find(k => k.pid === x.dataset.qty); return s + (i ? i.qty : 0); }, 0);
+    let b = det.querySelector('summary .badge');
+    if (n){ if (!b){ b = document.createElement('span'); b.className = 'badge'; det.querySelector('summary').appendChild(b); } b.textContent = n; }
+    else if (b) b.remove();
+  }
+  updateTotal();
+}
+function renderSorten(first){
+  const box = $('#sortList'); if (!box) return;
+  const was = box.querySelector('details'), s = draft.sorten;
+  const n = Object.values(s).reduce((x, y) => x + y, 0);
+  const open = first ? n > 0 : !!(was && was.open);
+  box.innerHTML = `<details ${open ? 'open' : ''}><summary><span>Sorten</span>${n ? `<span class="badge">${n}</span>` : ''}</summary>` +
+    db.sorten.map((name, i) => { const q = s[name] || 0; return `<div class="step ${q ? 'has' : ''}"><div class="s-name">${esc(name)}</div>
+      <div class="s-ctrl"><button type="button" data-sstep="-1" data-si="${i}" aria-label="${esc(name)} weniger" ${q ? '' : 'disabled'}>−</button>
+      <input class="s-qty" type="text" inputmode="numeric" pattern="[0-9]*" data-sqty="${i}" value="${q}" aria-label="${esc(name)} Stückzahl" autocomplete="off">
+      <button type="button" class="plus" data-sstep="1" data-si="${i}" aria-label="${esc(name)} mehr">+</button></div></div>`; }).join('') + '</details>';
+}
+function updateSortRow(inp){
+  const name = db.sorten[+inp.dataset.sqty], q = draft.sorten[name] || 0, row = inp.closest('.step');
+  row.classList.toggle('has', q > 0);
+  row.querySelector('[data-sstep="-1"]').disabled = !q;
+  const n = Object.values(draft.sorten).reduce((x, y) => x + y, 0), sum = $('#sortList summary');
+  let b = sum.querySelector('.badge');
+  if (n){ if (!b){ b = document.createElement('span'); b.className = 'badge'; sum.appendChild(b); } b.textContent = n; }
+  else if (b) b.remove();
+}
+function setSorte(i, q){
+  const name = db.sorten[i]; if (name == null) return;
+  if (q > 0) draft.sorten[name] = q; else delete draft.sorten[name];
+}
+function stepItem(pid, d){
+  let it = draft.items.find(i => i.pid === pid);
+  if (!it){
+    if (d < 0) return;
+    const p = db.products.find(x => x.id === pid); if (!p) return;
+    it = {pid, name:p.name, price:p.price, onRequest:p.price == null, qty:0, comp:parseComp(p.comp)};
+    draft.items.push(it);
+  }
+  it.qty = Math.max(0, it.qty + d);
+  if (!it.qty && db.products.some(p => p.id === pid)) draft.items = draft.items.filter(i => i !== it);
+  renderSteps();
+}
+function updateTotal(){
+  $('#shTotal').textContent = fmt(orderTotal(draft)) + (missingPrice(draft) ? ' + ?' : '');
+}
+function renderSeg(){
+  document.querySelectorAll('[data-seg] button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === (draft[b.parentElement.dataset.seg] || '')));
+  const aw = $('#addrWrap'); if (aw) aw.hidden = draft.mode !== 'Lieferung';
+}
+function saveOrder(){
+  if (!draft.date){ toast('Bitte ein Lieferdatum wählen'); return; }
+  draft.name = draft.name.trim();
+  if (draft.addr){
+    const a = draft.addr, j = (...x) => x.map(v => (v || '').trim()).filter(Boolean).join(' ');
+    draft.address = [j(a.street, a.no), j(a.zip, a.city)].filter(Boolean).join(', ');
+  }
+  if (!draft.name){ toast('Bitte einen Namen eingeben'); return; }
+  const idx = pid => { const i = db.products.findIndex(p => p.id === pid); return i < 0 ? 999 : i; };
+  draft.items = draft.items.filter(i => i.qty > 0).sort((a, b) => idx(a.pid) - idx(b.pid));
+  if (draft.id){ const i = db.orders.findIndex(o => o.id === draft.id); if (i >= 0) db.orders[i] = draft; }
+  else { draft.id = uid(); draft.created = new Date().toISOString(); db.orders.push(draft); }
+  save(); closeSheet(); renderAll(); toast('Bestellung gesichert');
+}
+
+/* ---------- Produkt bearbeiten ---------- */
+function openProduct(id){
+  const p = id ? db.products.find(x => x.id === id) : null;
+  const cats = [...groups().keys()];
+  pdraft = p ? {id:p.id, cat:p.cat || '', name:p.name, priceStr:priceStr(p.price), info:p.info || '', comp:p.comp || ''}
+             : {id:null, cat:'', name:'', priceStr:'', info:'', comp:''};
+  sheetMode = 'product';
+  $('#shTitle').textContent = p ? 'Produkt' : 'Neues Produkt';
+  $('#shFoot').hidden = true;
+  $('#shBody').innerHTML = `
+    <label class="f"><span>Kategorie</span><input data-pf="cat" list="catList" value="${esc(pdraft.cat)}" autocomplete="off" placeholder="Kategorie wählen oder neu eingeben">
+      <datalist id="catList">${cats.map(c => `<option value="${esc(c)}">`).join('')}</datalist></label>
+    <label class="f"><span>Name</span><input data-pf="name" value="${esc(pdraft.name)}" autocomplete="off"></label>
+    <label class="f"><span>Preis in € (leer lassen für „auf Anfrage“)</span><input data-pf="priceStr" value="${esc(pdraft.priceStr)}" inputmode="decimal" placeholder="z. B. 4,90"></label>
+    <label class="f"><span>Hinweis (optional)</span><input data-pf="info" value="${esc(pdraft.info)}" autocomplete="off" placeholder="z. B. mind. 10 Stück"></label>
+    <label class="f"><span>Inhalt, eine Sorte pro Zeile (optional)</span><textarea data-pf="comp" rows="6" placeholder="4× Schinken/Käse&#10;2× Thunfisch">${esc(pdraft.comp)}</textarea></label>
+    <p class="hint">Der Inhalt wird in der Übersicht als Brötchen gezählt.</p>
+    ${p ? '<button type="button" class="btn danger" data-act="delProd">Produkt löschen</button>' : ''}`;
+  openSheet();
+}
+function saveProduct(){
+  const name = pdraft.name.trim();
+  if (!name){ toast('Bitte einen Namen eingeben'); return; }
+  const price = num(pdraft.priceStr);
+  if (pdraft.priceStr.trim() && price == null){ toast('Preis bitte als Zahl, z. B. 4,90'); return; }
+  const obj = {id: pdraft.id || uid(), cat: pdraft.cat.trim() || 'Ohne Kategorie', name, price, info: pdraft.info.trim(), comp: pdraft.comp.trim()};
+  const i = db.products.findIndex(p => p.id === obj.id);
+  if (i >= 0) db.products[i] = obj; else db.products.push(obj);
+  save(); closeSheet(); renderProducts(); toast('Produkt gesichert');
+}
+
+/* ---------- Navigation ---------- */
+const TITLES = {list:'Bestellungen', sum:'Übersicht', prod:'Produkte', data:'Daten'};
+function showTab(t){
+  ui.tab = t;
+  if (t !== 'prod') ui.prodUnlocked = false;
+  for (const k in TITLES) $('#v-' + k).hidden = k !== t;
+  document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === t ? 'page' : 'false'));
+  $('#title').textContent = TITLES[t];
+  $('#addBtn').hidden = t === 'data' || (t === 'prod' && !ui.prodUnlocked);
+  render(t); window.scrollTo(0, 0);
+}
+function render(t){ ({list:renderList, sum:renderSum, prod:renderProducts, data:renderData})[t](); }
+function renderAll(){ render(ui.tab); }
+
+/* ---------- Ereignisse ---------- */
+document.addEventListener('click', async e => {
+  if (e.target.closest('a')) return;
+  const el = e.target.closest('button,[data-act]');
+  if (!el || el.disabled) return;
+  const d = el.dataset;
+  if (d.tab){ showTab(d.tab); return; }
+  if (d.s){ ui.status = d.s; syncListFilters(); renderList(); return; }
+  if (d.sstep){ const i = +d.si; setSorte(i, (draft.sorten[db.sorten[i]] || 0) + +d.sstep); renderSorten(); return; }
+  if (d.step){ stepItem(d.pid, +d.step); return; }
+  if (d.v !== undefined && el.parentElement.dataset.seg){ const k = el.parentElement.dataset.seg; draft[k] = draft[k] === d.v ? '' : d.v; renderSeg(); return; }
+  if (d.tg){ draft[d.tg] = !draft[d.tg]; el.classList.toggle('on', draft[d.tg]); el.setAttribute('aria-pressed', draft[d.tg]); return; }
+  const o = d.id ? db.orders.find(x => x.id === d.id) : null;
+  switch (d.act){
+    case 'addTop': if (ui.tab === 'prod'){ if (ui.prodUnlocked) openProduct(); } else openOrder(); break;
+    case 'unlock': tryUnlock(true); break;
+    case 'print': doPrint(); break;
+    case 'printFile': await printFile(); break;
+    case 'printWeek': doPrintWeek(); break;
+    case 'mailDay': await mailPdf('day'); break;
+    case 'mailWeek': await mailPdf('week'); break;
+    case 'saveDay': await mailPdf('day', true); break;
+    case 'saveWeek': await mailPdf('week', true); break;
+    case 'printWeekFile': await printWeekFile(); break;
+    case 'new': openOrder(); break;
+    case 'edit': openOrder(d.id); break;
+    case 'tDel': if (o){ o.delivered = !o.delivered; save(); renderList(); toast(o.delivered ? 'Als geliefert markiert' : 'Nicht mehr geliefert'); } break;
+    case 'tPay': if (o){ o.paid = !o.paid; save(); renderList(); toast(o.paid ? 'Als bezahlt markiert' : 'Nicht mehr bezahlt'); } break;
+    case 'close': closeSheet(); break;
+    case 'saveSheet': sheetMode === 'order' ? saveOrder() : saveProduct(); break;
+    case 'delOrder':
+      if (confirm(`Bestellung von ${draft.name || 'ohne Namen'} löschen?`)){
+        db.orders = db.orders.filter(x => x.id !== draft.id); save(); closeSheet(); renderAll(); toast('Bestellung gelöscht');
+      } break;
+    case 'newProd': openProduct(); break;
+    case 'editProd': openProduct(d.id); break;
+    case 'delProd':
+      if (confirm(`„${pdraft.name}“ löschen? Bestehende Bestellungen bleiben unverändert.`)){
+        db.products = db.products.filter(p => p.id !== pdraft.id); save(); closeSheet(); renderProducts(); toast('Produkt gelöscht');
+      } break;
+    case 'saveSorten': {
+      const list = [...new Set($('#sortenIn').value.split('\n').map(x => x.trim()).filter(Boolean))];
+      db.sorten = list; save(); renderProducts(); toast('Sorten gesichert');
+    } break;
+    case 'pUp': moveProduct(d.id, -1); break;
+    case 'pDown': moveProduct(d.id, 1); break;
+    case 'sPrev': shiftSum(-1); break;
+    case 'sNext': shiftSum(1); break;
+    case 'csvAll': await shareFile(`bestellungen-${today()}.csv`, toCSV(db.orders), 'text/csv'); break;
+    case 'csvFilter': await shareFile(`bestellungen-gefiltert-${today()}.csv`, toCSV(filtered()), 'text/csv'); break;
+    case 'backup': {
+      const ok = await shareFile(`puxi-sicherung-${today()}.json`, JSON.stringify(db, null, 1), 'application/json');
+      if (ok){ db.lastBackup = new Date().toISOString(); save(); renderData(); }
+    } break;
+  }
+});
+
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.sqty && draft){ setSorte(+t.dataset.sqty, Math.min(9999, parseInt(t.value.replace(/\D/g, ''), 10) || 0)); updateSortRow(t); return; }
+  if (t.dataset.qty && draft){ setQty(t.dataset.qty, Math.min(9999, parseInt(t.value.replace(/\D/g, ''), 10) || 0)); updateRow(t); return; }
+  if (t.dataset.a && draft){ draft.addr[t.dataset.a] = t.value; return; }
+  if (t.dataset.f && draft){ draft[t.dataset.f] = t.value; return; }
+  if (t.dataset.pp && draft){ const it = draft.items.find(i => i.pid === t.dataset.pp); if (it){ it.price = num(t.value); updateTotal(); } return; }
+  if (t.dataset.pf && pdraft){ pdraft[t.dataset.pf] = t.value; return; }
+  if (t.id === 'pinIn'){ if (t.value === PRODUCT_CODE) tryUnlock(false); return; }
+  if (t.id === 'fQ'){ ui.q = t.value.trim(); renderList(); }
+});
+
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset.sqty && draft){ t.value = draft.sorten[db.sorten[+t.dataset.sqty]] || 0; return; }
+  if (t.dataset.qty && draft){
+    const it = draft.items.find(i => i.pid === t.dataset.qty);
+    t.value = it ? it.qty : 0;
+    if (it && it.onRequest) renderSteps();
+    return;
+  }
+  switch (t.id){
+    case 'fPeriod': ui.period = t.value; syncListFilters(); renderList(); break;
+    case 'fDay': if (t.value){ ui.day = t.value; renderList(); } break;
+    case 'fMonth': if (t.value){ ui.month = t.value; renderList(); } break;
+    case 'sPeriod': ui.sumPeriod = t.value; renderSum(); break;
+    case 'sDay': if (t.value){ ui.sumDay = t.value; renderSum(); } break;
+    case 'sMonth': if (t.value){ ui.sumMonth = t.value; renderSum(); } break;
+    case 'importFile': if (t.files[0]) importBackup(t.files[0]); t.value = ''; break;
+  }
+});
+
+document.addEventListener('focusin', e => { if (e.target.dataset && (e.target.dataset.qty || e.target.dataset.sqty)) setTimeout(() => e.target.select(), 0); });
+function tryUnlock(warn){
+  const inp = $('#pinIn'); if (!inp) return;
+  if (inp.value === PRODUCT_CODE){ ui.prodUnlocked = true; $('#addBtn').hidden = false; renderProducts(); toast('Produkte entsperrt'); }
+  else if (warn){ inp.value = ''; inp.focus(); toast('Falscher Code'); }
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.id === 'pinIn'){ tryUnlock(true); return; } if (e.key === 'Enter' && e.target.dataset && (e.target.dataset.qty || e.target.dataset.sqty)) e.target.blur(); });
+
+/* ---------- Start ---------- */
+$('#fPeriod').value = ui.period; $('#fDay').value = ui.day; $('#fMonth').value = ui.month;
+$('#sPeriod').value = ui.sumPeriod;
+syncListFilters(); renderList();
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+</script>
+</body>
+</html>
