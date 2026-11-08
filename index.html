@@ -168,6 +168,13 @@ main{padding:12px 16px 28px;max-width:720px;margin:0 auto}
 .wk .n{text-align:center;font-variant-numeric:tabular-nums;font-weight:700}
 .wk .t{white-space:nowrap;font-weight:700;color:var(--bg)}
 .wk small{display:block;color:var(--muted-brown);font-size:12px;margin-top:2px}
+.sbtn{grid-column:1/-1;justify-self:start;border:0;background:#000;color:var(--bg);border-radius:2px;padding:8px 12px;font-weight:600;font-size:14px;min-height:40px}
+.sbtn.ok{background:var(--accent);color:#fff}
+.pick{z-index:25}
+.pk-info{margin:0 0 8px;font-size:16px}
+.pk-rest{background:#000;color:var(--bg);padding:2px 8px;border-radius:2px;font-weight:700;white-space:nowrap}
+.chk{display:flex;gap:10px;align-items:center;margin:0 0 14px;font-weight:600}
+.chk input{width:24px;height:24px;min-height:0;flex:0 0 auto;accent-color:var(--accent)}
 #toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translate(-50%,16px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:15px;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;z-index:30;white-space:nowrap}
 #toast.show{opacity:1;transform:translate(-50%,0)}
 @media (prefers-reduced-motion:reduce){#toast{transition:none}}
@@ -324,16 +331,23 @@ input,select,textarea{border-color:rgba(0,0,0,.2)}
   <div class="sh-body" id="shBody"></div>
   <div class="sh-foot" id="shFoot"><span>Summe</span><span id="shTotal"></span></div>
 </div>
+<div id="pick" class="sheet pick" hidden role="dialog" aria-modal="true" aria-labelledby="pkTitle">
+  <div class="sh-head"><span></span><h2 id="pkTitle"></h2><button class="link strong" data-act="pickDone">Fertig</button></div>
+  <div class="sh-body" id="pkBody"><p class="pk-info" id="pkInfo"></p><div class="steps" id="pkList"></div></div>
+</div>
 <div id="toast" role="status" aria-live="polite"></div>
 <div id="printArea"></div>
 
 <script>
 'use strict';
 const KEY = 'puxi-jahr-v1';
-const CATALOG = 3;
+const CATALOG = 6;
 const DEFAULT_SORTEN = ['Schinken','Schinken/Käse','Wurst','Wurst/Käse','Salami','Salami/Camembert','Bauern','Prosciutto','Mozzarella','Käse','Camembert','Ei mit Ei','Lachs','Thunfisch','Aufstrich','Speck/Ei','Wurströllchen','Vegan','Kaviar','Roast Beef','Matjes'];
-const S='Special', B='Brötchen', H='Häppchen', P='Partygebäck', A='Aufschnittplatten', J='Gefüllte Jour/Weckerl', K='Kalte Schmankerl', V='Verpackung und Lieferung';
+const S='Special', B='Brötchen', H='Häppchen', P='Partygebäck', A='Aufschnittplatten', J='Gefüllte Jour/Weckerl', PB='Gefülltes Baguette', PJ='XXL Jumbo', JW='Gefüllte Weckerl', JJ='Gefüllte Jourweckerl', K='Kalte Schmankerl', V='Verpackung und Lieferung';
 const one = n => '1× ' + n;
+const SL_A = 'Ei/Ei-Curry\nLiptauer\nKräuter\nBärlauch\nLachsaufstrich\nThunfischaufstrich\nFleischaufstrich';
+const SL_P = 'Schinken\nSchinken/Käse\nWurst\nWurst/Käse\nSalami/Ei\nKäse\nEi\nPutenschinken\nPutenschinken/Käse';
+const SL_E = 'Räucherlachs\nSalami/Camembert\nProsciutto\nBauern\nThunfisch\nMozzarella\nCamembert';
 const DEFAULT_PRODUCTS = [
   {id:'p1', cat:S, name:'Special Brötchenkarton', price:64, comp:'4× Schinken/Käse\n4× Prosciutto/Salami\n4× Käse/Mozzarella\n4× Räucherlachs\n2× Ei/Curry\n2× Thunfisch'},
   {id:'p2', cat:S, name:'Aufschnittplatte Käse', price:47, comp:''},
@@ -344,21 +358,21 @@ const DEFAULT_PRODUCTS = [
   {id:'p7', cat:S, name:'Hühnerschnitzelsemmerl', price:4.9, comp:one('Hühnerschnitzelsemmerl')},
   {id:'p8', cat:S, name:'Gemischtes Jour-Gebäck', price:null, comp:''},
 
-  {id:'b1', cat:B, name:'Brötchen Aufstrich', price:2.5, comp:one('Brötchen Aufstrich'), info:'mind. 15 Stück'},
-  {id:'b2', cat:B, name:'Brötchen Premium', price:2.9, comp:one('Brötchen Premium'), info:'mind. 15 Stück'},
-  {id:'b3', cat:B, name:'Brötchen Exclusiv', price:3.2, comp:one('Brötchen Exclusiv'), info:'mind. 15 Stück'},
-  {id:'b7', cat:B, name:'Brötchen Matjes', price:3.5, comp:one('Brötchen Matjes')},
-  {id:'b9', cat:B, name:'Brötchen Kaviar', price:3.5, comp:one('Brötchen Kaviar')},
-  {id:'b11', cat:B, name:'Brötchen Roastbeef', price:3.5, comp:one('Brötchen Roastbeef'), info:'ab 15 Stück'},
-  {id:'b13', cat:B, name:'Brötchen vegan', price:2.9, comp:one('Brötchen vegan'), info:'ab 10 Stück'},
+  {id:'b1', cat:B, name:'Brötchen Aufstrich', price:2.5, comp:one('Brötchen Aufstrich'), info:'mind. 15 Stück', pick:true, sortList:SL_A},
+  {id:'b2', cat:B, name:'Brötchen Premium', price:2.9, comp:one('Brötchen Premium'), info:'mind. 15 Stück', pick:true, sortList:SL_P},
+  {id:'b3', cat:B, name:'Brötchen Exclusiv', price:3.2, comp:one('Brötchen Exclusiv'), info:'mind. 15 Stück', pick:true, sortList:SL_E},
+  {id:'b7', cat:B, name:'Brötchen Matjes', price:3.5, comp:one('Matjes')},
+  {id:'b9', cat:B, name:'Brötchen Kaviar', price:3.5, comp:one('Kaviar')},
+  {id:'b11', cat:B, name:'Brötchen Roastbeef', price:3.5, comp:one('Roast Beef'), info:'ab 15 Stück'},
+  {id:'b13', cat:B, name:'Brötchen vegan', price:2.9, comp:one('Vegan'), info:'ab 10 Stück'},
 
-  {id:'b4', cat:H, name:'Häppchen Aufstrich', price:2.0, comp:one('Häppchen Aufstrich'), info:'mind. 15 Stück'},
-  {id:'b5', cat:H, name:'Häppchen Premium', price:2.3, comp:one('Häppchen Premium'), info:'mind. 15 Stück'},
-  {id:'b6', cat:H, name:'Häppchen Exclusiv', price:2.5, comp:one('Häppchen Exclusiv'), info:'mind. 15 Stück'},
-  {id:'b8', cat:H, name:'Häppchen Matjes', price:3.0, comp:one('Häppchen Matjes')},
-  {id:'b10', cat:H, name:'Häppchen Kaviar', price:3.0, comp:one('Häppchen Kaviar')},
-  {id:'b12', cat:H, name:'Häppchen Roastbeef', price:3.0, comp:one('Häppchen Roastbeef'), info:'ab 15 Stück'},
-  {id:'b14', cat:H, name:'Häppchen vegan', price:2.3, comp:one('Häppchen vegan'), info:'ab 10 Stück'},
+  {id:'b4', cat:H, name:'Häppchen Aufstrich', price:2.0, comp:one('Häppchen Aufstrich'), info:'mind. 15 Stück', pick:true, sortList:SL_A},
+  {id:'b5', cat:H, name:'Häppchen Premium', price:2.3, comp:one('Häppchen Premium'), info:'mind. 15 Stück', pick:true, sortList:SL_P},
+  {id:'b6', cat:H, name:'Häppchen Exclusiv', price:2.5, comp:one('Häppchen Exclusiv'), info:'mind. 15 Stück', pick:true, sortList:SL_E},
+  {id:'b8', cat:H, name:'Häppchen Matjes', price:3.0, comp:one('Matjes')},
+  {id:'b10', cat:H, name:'Häppchen Kaviar', price:3.0, comp:one('Kaviar')},
+  {id:'b12', cat:H, name:'Häppchen Roastbeef', price:3.0, comp:one('Roast Beef'), info:'ab 15 Stück'},
+  {id:'b14', cat:H, name:'Häppchen vegan', price:2.3, comp:one('Vegan'), info:'ab 10 Stück'},
 
   {id:'g1', cat:P, name:'Partygebäck Aufstrich, 4–5 Personen', price:30, comp:''},
   {id:'g2', cat:P, name:'Partygebäck Aufstrich, 7–8 Personen', price:48, comp:''},
@@ -366,12 +380,12 @@ const DEFAULT_PRODUCTS = [
   {id:'g4', cat:P, name:'Partygebäck Premium, 7–8 Personen', price:64, comp:''},
   {id:'g5', cat:P, name:'Partygebäck Exclusiv, 4–5 Personen', price:52, comp:''},
   {id:'g6', cat:P, name:'Partygebäck Exclusiv, 7–8 Personen', price:83, comp:''},
-  {id:'g7', cat:P, name:'Gefülltes Baguette Aufstrich', price:15, comp:''},
-  {id:'g8', cat:P, name:'Gefülltes Baguette Premium', price:20, comp:''},
-  {id:'g9', cat:P, name:'Gefülltes Baguette Exclusiv', price:25, comp:''},
-  {id:'g10', cat:P, name:'Puxi’s XXL Jumbo Aufstrich', price:19, comp:''},
-  {id:'g11', cat:P, name:'Puxi’s XXL Jumbo Premium', price:27, comp:''},
-  {id:'g12', cat:P, name:'Puxi’s XXL Jumbo Exclusiv', price:34, comp:''},
+  {id:'g7', cat:PB, name:'Gefülltes Baguette Aufstrich', price:15, comp:''},
+  {id:'g8', cat:PB, name:'Gefülltes Baguette Premium', price:20, comp:''},
+  {id:'g9', cat:PB, name:'Gefülltes Baguette Exclusiv', price:25, comp:''},
+  {id:'g10', cat:PJ, name:'Puxi’s XXL Jumbo Aufstrich', price:19, comp:''},
+  {id:'g11', cat:PJ, name:'Puxi’s XXL Jumbo Premium', price:27, comp:''},
+  {id:'g12', cat:PJ, name:'Puxi’s XXL Jumbo Exclusiv', price:34, comp:''},
   {id:'g13', cat:P, name:'Aufpreis Laugengebäck', price:6, comp:''},
   {id:'g14', cat:P, name:'Aufpreis Form (Herz, Ringe, Stern …)', price:6, comp:''},
 
@@ -385,13 +399,13 @@ const DEFAULT_PRODUCTS = [
   {id:'a8', cat:A, name:'Deluxe Platte klein', price:39, comp:'', info:'3–4 Personen, ca. 0,8 kg'},
   {id:'a9', cat:A, name:'Deluxe Platte groß', price:78, comp:'', info:'6–7 Personen, ca. 1,4 kg'},
 
-  {id:'j1', cat:J, name:'Gefüllte Weckerl Aufstrich', price:3.6, comp:one('Weckerl Aufstrich')},
-  {id:'j2', cat:J, name:'Gefüllte Weckerl Premium', price:4.8, comp:one('Weckerl Premium')},
-  {id:'j3', cat:J, name:'Gefüllte Weckerl Exclusiv', price:5.5, comp:one('Weckerl Exclusiv')},
-  {id:'j4', cat:J, name:'Gefüllte Jourweckerl Aufstrich', price:2.8, comp:one('Jourweckerl Aufstrich')},
-  {id:'j5', cat:J, name:'Gefüllte Jourweckerl Premium', price:3.5, comp:one('Jourweckerl Premium')},
-  {id:'j6', cat:J, name:'Gefüllte Jourweckerl Exclusiv', price:4.2, comp:one('Jourweckerl Exclusiv')},
-  {id:'j7', cat:J, name:'Franzosen (Baguette-Stangerl)', price:8.3, comp:one('Franzosen')},
+  {id:'j1', cat:JW, name:'Gefüllte Weckerl Aufstrich', price:3.6, comp:one('Weckerl Aufstrich'), pick:true, sortList:SL_A},
+  {id:'j2', cat:JW, name:'Gefüllte Weckerl Premium', price:4.8, comp:one('Weckerl Premium'), pick:true, sortList:SL_P},
+  {id:'j3', cat:JW, name:'Gefüllte Weckerl Exclusiv', price:5.5, comp:one('Weckerl Exclusiv'), pick:true, sortList:SL_E},
+  {id:'j4', cat:JJ, name:'Gefüllte Jourweckerl Aufstrich', price:2.8, comp:one('Jourweckerl Aufstrich'), pick:true, sortList:SL_A},
+  {id:'j5', cat:JJ, name:'Gefüllte Jourweckerl Premium', price:3.5, comp:one('Jourweckerl Premium'), pick:true, sortList:SL_P},
+  {id:'j6', cat:JJ, name:'Gefüllte Jourweckerl Exclusiv', price:4.2, comp:one('Jourweckerl Exclusiv'), pick:true, sortList:SL_E},
+  {id:'j7', cat:JW, name:'Franzosen (Baguette-Stangerl)', price:8.3, comp:one('Franzosen')},
 
   {id:'k1', cat:K, name:'Gefüllte Schinkenrollen', price:4.5, comp:'', info:'mind. 5 Stück'},
   {id:'k2', cat:K, name:'Kleine Schinkenröllchen', price:3.5, comp:'', info:'mind. 5 Stück'},
@@ -442,11 +456,18 @@ const missingPrice = o => o.items.some(i => i.qty > 0 && i.price == null);
 let toastTimer;
 function toast(msg){
   const t = $('#toast'); t.textContent = msg; t.classList.add('show');
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), msg.length > 40 ? 4000 : 2200);
 }
 
 /* ---------- Daten ---------- */
-function freshDb(){ return {products: JSON.parse(JSON.stringify(DEFAULT_PRODUCTS)), orders: [], lastBackup: null, catalog: CATALOG, sorten: [...DEFAULT_SORTEN]}; }
+function parseLines(t){ return String(t || '').split('\n').map(x => x.trim()).filter(Boolean); }
+function addMissingSorten(d){
+  const k = s => String(s).toLowerCase().replace(/\s+/g, '');
+  const have = new Set(d.sorten.map(k));
+  d.products.forEach(p => { if (p.pick) parseLines(p.sortList).forEach(n => { if (!have.has(k(n))){ have.add(k(n)); d.sorten.push(n); } }); });
+}
+function freshDb(){ const d = freshDb0(); addMissingSorten(d); return d; }
+function freshDb0(){ return {products: JSON.parse(JSON.stringify(DEFAULT_PRODUCTS)), orders: [], lastBackup: null, catalog: CATALOG, sorten: [...DEFAULT_SORTEN]}; }
 function migrate(d){
   const v = d.catalog || 1;
   if (v < 2){
@@ -458,6 +479,24 @@ function migrate(d){
     d.products.forEach(p => { if (p.cat === 'Brötchen und Häppchen') p.cat = /^Häppchen/.test(p.name) ? H : B; });
   }
   if (!Array.isArray(d.sorten)) d.sorten = [...DEFAULT_SORTEN];
+  if (v < 4){
+    d.products.forEach(p => { if (p.cat === B || p.cat === H || /^j[1-6]$/.test(p.id)) p.pick = true; });
+  }
+  if (v < 5){
+    d.products.forEach(p => {
+      const def = DEFAULT_PRODUCTS.find(x => x.id === p.id); if (!def) return;
+      if (/^b(7|8|9|10|11|12|13|14)$/.test(p.id)){ if (p.comp === one(p.name)) p.comp = def.comp; p.pick = false; }
+      else if (def.sortList && p.pick && !p.sortList) p.sortList = def.sortList;
+    });
+    addMissingSorten(d);
+  }
+  if (v < 6){
+    d.products.forEach(p => {
+      if (p.cat === P && /baguette/i.test(p.name)) p.cat = PB;
+      else if (p.cat === P && /jumbo/i.test(p.name)) p.cat = PJ;
+      else if (p.cat === J) p.cat = /jourweckerl/i.test(p.name) ? JJ : JW;
+    });
+  }
   d.catalog = CATALOG;
   return d;
 }
@@ -500,7 +539,7 @@ function dayHead(s, sum){
 
 function orderCard(o){
   const cls = o.paid ? 'is-paid' : '';
-  const items = o.items.map(i => `${i.qty}× ${esc(i.name)}`).join(', ') || '<span class="hint">Keine Produkte</span>';
+  const items = o.items.map(i => `${i.qty}× ${esc(i.name)}${sortTxt(i)}`).join(', ') || '<span class="hint">Keine Produkte</span>';
   const meta = [
     o.time ? `<span>${esc(o.time)} Uhr</span>` : '',
     o.mode ? `<span>${modeTxt(o)}</span>` : '',
@@ -547,6 +586,7 @@ function aggregate(orders){
     const t = orderTotal(o);
     a.total += t; if (o.paid) a.paid += t; if (!o.delivered) a.toDeliver++; if (missingPrice(o)) a.missing++;
     for (const [n, v] of Object.entries(o.sorten || {})) a.sorten.set(n, (a.sorten.get(n) || 0) + v);
+    for (const i of o.items) for (const [n, v] of Object.entries(i.sorten || {})) a.sorten.set(n, (a.sorten.get(n) || 0) + v);
     for (const i of o.items){
       a.products.set(i.name, (a.products.get(i.name) || 0) + i.qty);
       for (const c of (i.comp || [])) a.rolls.set(c.name, (a.rolls.get(c.name) || 0) + c.n * i.qty);
@@ -604,7 +644,7 @@ function weekHtml(){
       os.map(o => { const m = catQty(o); return `<tr><td class="t">${o.time ? esc(o.time) : '–'}</td><td><b>${esc(o.name)}</b>${o.mode ? `<small>${modeTxt(o)}</small>` : ''}</td>${w.cats.map(c => `<td class="n">${m[c] || ''}</td>`).join('')}</tr>`; }).join('') +
       '</table></div></div>';
   });
-  return h + '<button class="btn primary" data-act="printWeek">Wochenübersicht drucken (A4 quer)</button><button class="btn" data-act="mailWeek">Per Mail senden (PDF)</button><button class="btn" data-act="saveWeek">PDF speichern</button>';
+  return h + '<button class="btn primary" data-act="mailWeek">PDF teilen (Mail, Drucken)</button><button class="btn" data-act="saveWeek">PDF speichern</button>';
 }
 function printWeekBody(){
   const w = weekData();
@@ -631,8 +671,7 @@ function renderSum(){
   }
   if (isDay){
     body.innerHTML = sumBlock(aggregate(orders), dayHead(ui.sumDay, null)) +
-      '<button class="btn primary" data-act="print">Tagesbestellung drucken (A4)</button>' +
-      '<button class="btn" data-act="mailDay">Per Mail senden (PDF)</button>' +
+      '<button class="btn primary" data-act="mailDay">PDF teilen (Mail, Drucken)</button>' +
       '<button class="btn" data-act="saveDay">PDF speichern</button>';
     return;
   }
@@ -667,6 +706,7 @@ function renderProducts(){
       <button class="p-main" data-act="editProd" data-id="${p.id}">
         <span class="p-top"><b>${esc(p.name)}</b><span>${p.price == null ? 'auf Anfrage' : fmt(p.price)}</span></span>
         ${p.info ? `<small>${esc(p.info)}</small>` : ''}
+        ${p.pick ? `<small>Sorten: ${esc(parseLines(p.sortList).join(', ') || 'alle')}</small>` : ''}
         ${p.comp ? `<small>Zählt als ${esc(parseComp(p.comp).map(c => c.n + '× ' + c.name).join(', '))}</small>` : ''}
       </button>
       <span class="p-ord">
@@ -677,7 +717,7 @@ function renderProducts(){
   $('#v-prod').innerHTML = (h || '<p class="hint">Noch keine Produkte.</p>') + `
     <button class="btn primary" data-act="newProd">Produkt hinzufügen</button>
     <h2 class="pcat">Sorten für den Ausdruck</h2>
-    <div class="card"><p>Eine Sorte pro Zeile. Diese Liste erscheint in der Bestellmaske und als Zeilen im Tagesausdruck.</p>
+    <div class="card"><p>Eine Sorte pro Zeile. Das ist die Reihenfolge der Zeilen im Tagesausdruck. Welche Sorten bei einem Produkt zur Auswahl stehen, legst du beim Produkt selbst fest.</p>
       <textarea id="sortenIn" rows="12">${esc(db.sorten.join('\n'))}</textarea>
       <button class="btn" data-act="saveSorten">Sorten sichern</button></div>
     <p class="hint">Preisänderungen gelten für neue Bestellungen. Bestehende Bestellungen behalten den Preis, mit dem sie aufgenommen wurden.</p>
@@ -757,7 +797,12 @@ function sortenMatrix(orders){
   };
   orders.forEach((o, ci) => {
     for (const [n, v] of Object.entries(o.sorten || {})) add(n, v, ci);
-    for (const i of o.items) for (const c of (i.comp || [])) add(c.name, c.n * i.qty, ci);
+    for (const i of o.items){
+      if (isPick(i)){
+        for (const [n, v] of Object.entries(i.sorten || {})) add(n, v, ci);
+        const rest = i.qty - assigned(i); if (rest > 0) add(i.name + ' (ohne Sorte)', rest, ci);
+      } else for (const c of (i.comp || [])) add(c.name, c.n * i.qty, ci);
+    }
   });
   return {rows, extra:[...extra.values()]};
 }
@@ -791,13 +836,16 @@ function printBody(date){
   h += `<h2 class="pb">Bestellungen ${dShort(date)}</h2><table><tr><th></th><th>Kunde</th><th>Produkte</th><th>Notiz</th><th class="r">Betrag</th></tr>`;
   h += orders.map(o => `<tr><td><span class="box"></span></td>
     <td>${o.time ? '<b>' + esc(o.time) + ' Uhr</b><br>' : ''}<b>${esc(o.name)}</b>${o.phone ? '<br>' + esc(o.phone) : ''}${o.mode ? '<br>' + modeTxt(o) : ''}${o.invoice ? '<br>Rechnung ' + esc(o.invoice) : ''}</td>
-    <td>${o.items.map(i => `${i.qty}× ${esc(i.name)}${i.price == null ? ' (Preis fehlt)' : ''}`).join('<br>')}</td>
+    <td>${o.items.map(i => `${i.qty}× ${esc(i.name)}${sortTxt(i)}${i.price == null ? ' (Preis fehlt)' : ''}`).join('<br>')}</td>
     <td class="note">${esc(o.note).replace(/\n/g, '<br>')}</td>
     <td class="r">${fmt(orderTotal(o))}<br>${o.paid ? 'bezahlt' : 'offen'}${o.payment ? '<br>' + esc(o.payment) : ''}</td></tr>`).join('');
   h += `<tr class="sum"><td></td><td colspan="3">Gesamt</td><td class="r">${fmt(a.total)}</td></tr></table>`;
   return h;
 }
+// Als App vom Home-Bildschirm kann iOS nicht direkt drucken: dann PDF erzeugen und übers Teilen-Menü drucken
+const isStandalone = () => window.navigator.standalone === true || !!(window.matchMedia && matchMedia('(display-mode: standalone)').matches);
 function doPrint(){
+  if (isStandalone()){ mailPdf('day', false, true); return; }
   $('#printArea').innerHTML = printBody(ui.sumDay);
   window.print();
 }
@@ -807,6 +855,7 @@ function setLandscape(on){
   st.textContent = on ? '@page{size:A4 landscape;margin:12mm}' : '';
 }
 function doPrintWeek(){
+  if (isStandalone()){ mailPdf('week', false, true); return; }
   $('#printArea').innerHTML = printWeekBody();
   setLandscape(true);
   window.addEventListener('afterprint', () => setLandscape(false), {once:true});
@@ -833,36 +882,100 @@ function loadPdfLib(){
   });
   return pdfLibPromise;
 }
-async function mailPdf(kind, saveOnly){
+async function mailPdf(kind, saveOnly, forPrint){
   const week = kind === 'week';
   const name = week ? `wochenuebersicht-kw${isoWeek(weekStart(ui.sumDay))}-${weekStart(ui.sumDay)}.pdf` : `bestellungen-${ui.sumDay}.pdf`;
   const label = week ? `Wochenübersicht KW ${isoWeek(weekStart(ui.sumDay))}` : `Bestellungen ${dShort(ui.sumDay)}`;
-  toast('PDF wird erstellt …');
+  toast(forPrint ? 'PDF wird erstellt. Im Menü dann „Drucken“ wählen.' : 'PDF wird erstellt …');
   try { await loadPdfLib(); }
   catch(e){ toast('PDF-Funktion nicht geladen. Bitte einmal mit Internet öffnen.'); return; }
-  const area = $('#printArea');
+  if (!document.getElementById('pdfCss')){
+    const st = document.createElement('style'); st.id = 'pdfCss';
+    st.textContent = $('#printCss').textContent.split('#printArea').join('.pdfDoc').replace(/@page\{[^}]*\}/g, '');
+    document.head.appendChild(st);
+  }
+  const area = document.createElement('div');
+  area.className = 'pdfDoc';
+  area.style.cssText = `width:${week ? 1030 : 700}px;background:#fff;color:#000`;
   area.innerHTML = week ? printWeekBody() : printBody(ui.sumDay);
-  area.style.cssText = `display:block;position:fixed;left:-20000px;top:0;width:${week ? 1030 : 700}px;background:#fff`;
+  const sy = window.scrollY; window.scrollTo(0, 0);
   try {
     const blob = await html2pdf().set({
       margin: 12, filename: name,
       image: {type:'jpeg', quality:0.95},
-      html2canvas: {scale:2, backgroundColor:'#ffffff', windowWidth: week ? 1030 : 700},
+      html2canvas: {scale:2, backgroundColor:'#ffffff', windowWidth: week ? 1030 : 700, scrollX:0, scrollY:0},
       jsPDF: {unit:'mm', format:'a4', orientation: week ? 'landscape' : 'portrait'},
       pagebreak: {mode:['css', 'legacy'], before:'.pb', avoid:'tr'}
     }).from(area).outputPdf('blob');
-    area.style.cssText = '';
+    window.scrollTo(0, sy);
     const ok = await shareFile(name, blob, 'application/pdf', `${label} – Puxi’s Brötchenparadies`, saveOnly);
     if (ok && saveOnly) toast('PDF gespeichert');
   } catch(e){
-    area.style.cssText = '';
+    window.scrollTo(0, sy);
     toast('PDF konnte nicht erstellt werden');
   }
 }
 
 /* ---------- Bestellung bearbeiten ---------- */
 function openSheet(){ $('#sheet').hidden = false; document.body.classList.add('locked'); $('#shBody').scrollTop = 0; }
-function closeSheet(){ $('#sheet').hidden = true; document.body.classList.remove('locked'); draft = pdraft = sheetMode = null; }
+/* ---------- Sorten pro Produkt ---------- */
+const isPick = it => it.pick != null ? !!it.pick : !!(db.products.find(p => p.id === it.pid) || {}).pick;
+const assigned = it => Object.values(it.sorten || {}).reduce((s, v) => s + v, 0);
+const sortTxt = i => { const e = Object.entries(i.sorten || {}); return e.length ? ' (' + e.map(([n, v]) => v + ' ' + esc(n)).join(', ') + ')' : ''; };
+function trimSorten(it){
+  if (!it.sorten) return;
+  let over = assigned(it) - it.qty;
+  for (const k of Object.keys(it.sorten).reverse()){
+    if (over <= 0) break;
+    const t = Math.min(over, it.sorten[k]); it.sorten[k] -= t; over -= t;
+    if (!it.sorten[k]) delete it.sorten[k];
+  }
+}
+let pickPid = null, pickL = [];
+const pickItem = () => draft && draft.items.find(i => i.pid === pickPid);
+function pickInfo(it){
+  const a = assigned(it), rest = it.qty - a;
+  return `<b>${it.qty} Stück</b>, davon ${a} zugeteilt. ${rest ? `<span class="pk-rest">Noch ${rest} offen</span>` : 'Alle zugeteilt ✓'}`;
+}
+function openPick(pid){
+  pickPid = pid; const it = pickItem(); if (!it) return;
+  if (!it.sorten) it.sorten = {};
+  const p = db.products.find(x => x.id === it.pid), own = p && p.pick ? parseLines(p.sortList) : [];
+  pickL = [...new Set([...(own.length ? own : db.sorten), ...Object.keys(it.sorten)])];
+  $('#pkTitle').textContent = it.name;
+  renderPick(); $('#pick').hidden = false; $('#pkBody').scrollTop = 0;
+}
+function renderPick(){
+  const it = pickItem(); if (!it) return;
+  const rest = it.qty - assigned(it);
+  $('#pkInfo').innerHTML = pickInfo(it);
+  $('#pkList').innerHTML = pickL.map((name, i) => { const q = it.sorten[name] || 0; return `<div class="step ${q ? 'has' : ''}"><div class="s-name">${esc(name)}</div>
+    <div class="s-ctrl"><button type="button" data-pstep="-1" data-si="${i}" aria-label="${esc(name)} weniger" ${q ? '' : 'disabled'}>−</button>
+    <input class="s-qty" type="text" inputmode="numeric" pattern="[0-9]*" data-pqty="${i}" value="${q}" aria-label="${esc(name)} Stückzahl" autocomplete="off">
+    <button type="button" class="plus" data-pstep="1" data-si="${i}" aria-label="${esc(name)} mehr" ${rest ? '' : 'disabled'}>+</button></div></div>`; }).join('');
+}
+function updatePickMeta(){
+  const it = pickItem(); if (!it) return;
+  const rest = it.qty - assigned(it);
+  $('#pkInfo').innerHTML = pickInfo(it);
+  $('#pkList').querySelectorAll('.step').forEach((row, i) => {
+    const q = it.sorten[pickL[i]] || 0;
+    row.classList.toggle('has', q > 0);
+    row.querySelector('[data-pstep="-1"]').disabled = !q;
+    row.querySelector('[data-pstep="1"]').disabled = !rest;
+  });
+}
+function setPick(i, q){
+  const it = pickItem(), name = pickL[i];
+  if (!it || name == null) return 0;
+  const other = assigned(it) - (it.sorten[name] || 0);
+  q = Math.max(0, Math.min(q, it.qty - other));
+  if (q) it.sorten[name] = q; else delete it.sorten[name];
+  return q;
+}
+function closePick(){ $('#pick').hidden = true; pickPid = null; if (draft) renderSteps(); }
+
+function closeSheet(){ $('#sheet').hidden = true; document.body.classList.remove('locked'); draft = pdraft = sheetMode = null; $('#pick').hidden = true; pickPid = null; }
 
 function openOrder(id){
   const o = id ? db.orders.find(x => x.id === id) : null;
@@ -890,8 +1003,7 @@ function openOrder(id){
     </div>
     <p class="sec">Produkte</p>
     <div class="steps" id="stepList"></div>
-    <p class="sec">Sorten für den Ausdruck</p>
-    <div class="steps" id="sortList"></div>
+    ${Object.keys(draft.sorten).length ? '<p class="sec">Sorten (früher ohne Produkt erfasst)</p><div class="steps" id="sortList"></div>' : ''}
     <label class="f"><span>Notiz</span><textarea data-f="note" rows="3">${esc(draft.note)}</textarea></label>
     <div class="f"><span>Zahlungsart</span>
       <div class="seg" data-seg="payment">
@@ -915,6 +1027,7 @@ function stepRow(pid, name, price, it, onReq, info){
       <input class="s-qty" type="text" inputmode="numeric" pattern="[0-9]*" data-qty="${pid}" value="${q}" aria-label="${esc(name)} Stückzahl" autocomplete="off">
       <button type="button" class="plus" data-step="1" data-pid="${pid}" aria-label="${esc(name)} mehr">+</button>
     </div>
+    ${it && q && isPick(it) ? `<button type="button" class="sbtn ${assigned(it) === q ? 'ok' : ''}" data-act="pickSorten" data-pid="${pid}">Sorten: ${assigned(it)} von ${q} zugeteilt ›</button>` : ''}
     ${onReq && q ? `<label class="s-pp">Preis pro Stück in €<input inputmode="decimal" data-pp="${pid}" value="${esc(priceStr(it.price))}" placeholder="0,00"></label>` : ''}
   </div>`;
 }
@@ -944,10 +1057,11 @@ function setQty(pid, q){
   if (!it){
     if (!q) return;
     const p = db.products.find(x => x.id === pid); if (!p) return;
-    it = {pid, name:p.name, price:p.price, onRequest:p.price == null, qty:0, comp:parseComp(p.comp)};
+    it = {pid, name:p.name, price:p.price, onRequest:p.price == null, qty:0, comp:parseComp(p.comp), pick:!!p.pick, sorten:{}};
     draft.items.push(it);
   }
   it.qty = q;
+  trimSorten(it);
   if (!q && db.products.some(p => p.id === pid)) draft.items = draft.items.filter(i => i !== it);
 }
 function updateRow(inp){
@@ -996,10 +1110,11 @@ function stepItem(pid, d){
   if (!it){
     if (d < 0) return;
     const p = db.products.find(x => x.id === pid); if (!p) return;
-    it = {pid, name:p.name, price:p.price, onRequest:p.price == null, qty:0, comp:parseComp(p.comp)};
+    it = {pid, name:p.name, price:p.price, onRequest:p.price == null, qty:0, comp:parseComp(p.comp), pick:!!p.pick, sorten:{}};
     draft.items.push(it);
   }
   it.qty = Math.max(0, it.qty + d);
+  trimSorten(it);
   if (!it.qty && db.products.some(p => p.id === pid)) draft.items = draft.items.filter(i => i !== it);
   renderSteps();
 }
@@ -1019,6 +1134,8 @@ function saveOrder(){
   }
   if (!draft.name){ toast('Bitte einen Namen eingeben'); return; }
   const idx = pid => { const i = db.products.findIndex(p => p.id === pid); return i < 0 ? 999 : i; };
+  const openS = draft.items.filter(i => i.qty > 0 && isPick(i) && assigned(i) < i.qty);
+  if (openS.length && !confirm(openS.map(i => `${i.name}: ${i.qty - assigned(i)} ohne Sorte`).join('\n') + '\n\nTrotzdem sichern?')) return;
   draft.items = draft.items.filter(i => i.qty > 0).sort((a, b) => idx(a.pid) - idx(b.pid));
   if (draft.id){ const i = db.orders.findIndex(o => o.id === draft.id); if (i >= 0) db.orders[i] = draft; }
   else { draft.id = uid(); draft.created = new Date().toISOString(); db.orders.push(draft); }
@@ -1029,8 +1146,8 @@ function saveOrder(){
 function openProduct(id){
   const p = id ? db.products.find(x => x.id === id) : null;
   const cats = [...groups().keys()];
-  pdraft = p ? {id:p.id, cat:p.cat || '', name:p.name, priceStr:priceStr(p.price), info:p.info || '', comp:p.comp || ''}
-             : {id:null, cat:'', name:'', priceStr:'', info:'', comp:''};
+  pdraft = p ? {id:p.id, cat:p.cat || '', name:p.name, priceStr:priceStr(p.price), info:p.info || '', comp:p.comp || '', pick:!!p.pick, sortList:p.sortList || ''}
+             : {id:null, cat:'', name:'', priceStr:'', info:'', comp:'', pick:false, sortList:''};
   sheetMode = 'product';
   $('#shTitle').textContent = p ? 'Produkt' : 'Neues Produkt';
   $('#shFoot').hidden = true;
@@ -1040,6 +1157,8 @@ function openProduct(id){
     <label class="f"><span>Name</span><input data-pf="name" value="${esc(pdraft.name)}" autocomplete="off"></label>
     <label class="f"><span>Preis in € (leer lassen für „auf Anfrage“)</span><input data-pf="priceStr" value="${esc(pdraft.priceStr)}" inputmode="decimal" placeholder="z. B. 4,90"></label>
     <label class="f"><span>Hinweis (optional)</span><input data-pf="info" value="${esc(pdraft.info)}" autocomplete="off" placeholder="z. B. mind. 10 Stück"></label>
+    <label class="chk"><input type="checkbox" data-pfc="pick" ${pdraft.pick ? 'checked' : ''}> Sorten bei der Bestellung auswählen</label>
+    <label class="f"><span>Sorten zur Auswahl, eine pro Zeile (leer = alle Sorten)</span><textarea data-pf="sortList" rows="7">${esc(pdraft.sortList)}</textarea></label>
     <label class="f"><span>Inhalt, eine Sorte pro Zeile (optional)</span><textarea data-pf="comp" rows="6" placeholder="4× Schinken/Käse&#10;2× Thunfisch">${esc(pdraft.comp)}</textarea></label>
     <p class="hint">Der Inhalt wird in der Übersicht als Brötchen gezählt.</p>
     ${p ? '<button type="button" class="btn danger" data-act="delProd">Produkt löschen</button>' : ''}`;
@@ -1050,9 +1169,10 @@ function saveProduct(){
   if (!name){ toast('Bitte einen Namen eingeben'); return; }
   const price = num(pdraft.priceStr);
   if (pdraft.priceStr.trim() && price == null){ toast('Preis bitte als Zahl, z. B. 4,90'); return; }
-  const obj = {id: pdraft.id || uid(), cat: pdraft.cat.trim() || 'Ohne Kategorie', name, price, info: pdraft.info.trim(), comp: pdraft.comp.trim()};
+  const obj = {id: pdraft.id || uid(), cat: pdraft.cat.trim() || 'Ohne Kategorie', name, price, info: pdraft.info.trim(), comp: pdraft.comp.trim(), pick: !!pdraft.pick, sortList: parseLines(pdraft.sortList).join('\n')};
   const i = db.products.findIndex(p => p.id === obj.id);
   if (i >= 0) db.products[i] = obj; else db.products.push(obj);
+  addMissingSorten(db);
   save(); closeSheet(); renderProducts(); toast('Produkt gesichert');
 }
 
@@ -1079,11 +1199,14 @@ document.addEventListener('click', async e => {
   if (d.tab){ showTab(d.tab); return; }
   if (d.s){ ui.status = d.s; syncListFilters(); renderList(); return; }
   if (d.sstep){ const i = +d.si; setSorte(i, (draft.sorten[db.sorten[i]] || 0) + +d.sstep); renderSorten(); return; }
+  if (d.pstep){ const it = pickItem(); if (it){ const n = pickL[+d.si]; setPick(+d.si, (it.sorten[n] || 0) + +d.pstep); renderPick(); } return; }
   if (d.step){ stepItem(d.pid, +d.step); return; }
   if (d.v !== undefined && el.parentElement.dataset.seg){ const k = el.parentElement.dataset.seg; draft[k] = draft[k] === d.v ? '' : d.v; renderSeg(); return; }
   if (d.tg){ draft[d.tg] = !draft[d.tg]; el.classList.toggle('on', draft[d.tg]); el.setAttribute('aria-pressed', draft[d.tg]); return; }
   const o = d.id ? db.orders.find(x => x.id === d.id) : null;
   switch (d.act){
+    case 'pickSorten': openPick(d.pid); break;
+    case 'pickDone': closePick(); break;
     case 'addTop': if (ui.tab === 'prod'){ if (ui.prodUnlocked) openProduct(); } else openOrder(); break;
     case 'unlock': tryUnlock(true); break;
     case 'print': doPrint(); break;
@@ -1129,6 +1252,7 @@ document.addEventListener('click', async e => {
 
 document.addEventListener('input', e => {
   const t = e.target;
+  if (t.dataset.pqty && draft){ const raw = t.value.replace(/\D/g, ''); const q = setPick(+t.dataset.pqty, parseInt(raw, 10) || 0); if (raw !== '' && String(q) !== raw) t.value = q; updatePickMeta(); return; }
   if (t.dataset.sqty && draft){ setSorte(+t.dataset.sqty, Math.min(9999, parseInt(t.value.replace(/\D/g, ''), 10) || 0)); updateSortRow(t); return; }
   if (t.dataset.qty && draft){ setQty(t.dataset.qty, Math.min(9999, parseInt(t.value.replace(/\D/g, ''), 10) || 0)); updateRow(t); return; }
   if (t.dataset.a && draft){ draft.addr[t.dataset.a] = t.value; return; }
@@ -1141,11 +1265,14 @@ document.addEventListener('input', e => {
 
 document.addEventListener('change', e => {
   const t = e.target;
+  if (t.dataset.pfc && pdraft){ pdraft[t.dataset.pfc] = t.checked; return; }
+  if (t.dataset.pqty && draft){ const it = pickItem(); t.value = it ? (it.sorten[pickL[+t.dataset.pqty]] || 0) : 0; return; }
   if (t.dataset.sqty && draft){ t.value = draft.sorten[db.sorten[+t.dataset.sqty]] || 0; return; }
   if (t.dataset.qty && draft){
     const it = draft.items.find(i => i.pid === t.dataset.qty);
     t.value = it ? it.qty : 0;
-    if (it && it.onRequest) renderSteps();
+    if (it && (it.onRequest || isPick(it))) renderSteps();
+    if (it && isPick(it) && it.qty > assigned(it)) openPick(it.pid);
     return;
   }
   switch (t.id){
@@ -1159,14 +1286,14 @@ document.addEventListener('change', e => {
   }
 });
 
-document.addEventListener('focusin', e => { if (e.target.dataset && (e.target.dataset.qty || e.target.dataset.sqty)) setTimeout(() => e.target.select(), 0); });
+document.addEventListener('focusin', e => { if (e.target.dataset && (e.target.dataset.qty || e.target.dataset.sqty || e.target.dataset.pqty)) setTimeout(() => e.target.select(), 0); });
 function tryUnlock(warn){
   const inp = $('#pinIn'); if (!inp) return;
   if (inp.value === PRODUCT_CODE){ ui.prodUnlocked = true; $('#addBtn').hidden = false; renderProducts(); toast('Produkte entsperrt'); }
   else if (warn){ inp.value = ''; inp.focus(); toast('Falscher Code'); }
 }
 document.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && e.target.id === 'pinIn'){ tryUnlock(true); return; } if (e.key === 'Enter' && e.target.dataset && (e.target.dataset.qty || e.target.dataset.sqty)) e.target.blur(); });
+  if (e.key === 'Enter' && e.target.id === 'pinIn'){ tryUnlock(true); return; } if (e.key === 'Enter' && e.target.dataset && (e.target.dataset.qty || e.target.dataset.sqty || e.target.dataset.pqty)) e.target.blur(); });
 
 /* ---------- Start ---------- */
 $('#fPeriod').value = ui.period; $('#fDay').value = ui.day; $('#fMonth').value = ui.month;

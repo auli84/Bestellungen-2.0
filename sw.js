@@ -1,5 +1,5 @@
 // Version erhöhen, wenn du Dateien änderst
-const CACHE = 'puxi-jahr-v15';
+const CACHE = 'puxi-jahr-v21';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-512.png'];
 // PDF-Bibliothek für „Per Mail senden“, damit sie auch offline da ist
 const LIBS = ['https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'];
